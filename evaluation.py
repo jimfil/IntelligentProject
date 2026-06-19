@@ -379,4 +379,4 @@ if __name__ == "__main__":
         verbose=True,
         render_mode=True,
     )
-    print_report(metrics, controller_name="RandomController")
+    print_report(metrics, controller_name="ScriptedCtrl")

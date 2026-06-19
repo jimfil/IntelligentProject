@@ -335,8 +335,8 @@ if __name__ == "__main__":
     total_reward = 0.0
     total_cost = 0.0
     terminated = truncated = False
-
     while not (terminated or truncated):
+
         action = env.action_space.sample()
         obs, reward, cost, terminated, truncated, info = env.step(action)
         total_reward += reward

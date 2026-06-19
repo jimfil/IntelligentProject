@@ -1,6 +1,13 @@
-safety-gymnasium>=0.4.0
 gymnasium==0.28.1
-numpy>=1.24.0
+numpy==1.23.5
+pygame>=2.5.0
+mujoco==2.3.3
+gymnasium-robotics==1.2.2
+xmltodict
+pyyaml
+stable-baselines3==2.1.0
+rich
+
 torch>=2.0.0
 matplotlib>=3.7.0
 tensorboard>=2.13.0
