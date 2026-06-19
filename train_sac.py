@@ -225,6 +225,25 @@ def main():
     model.save(final_path)
     print(f"Saved final model to {final_path}.zip")
 
+    # Save obs normalizer stats if normalize_obs is True
+    if args.normalize_obs:
+        current_env = train_env.envs[0]
+        obs_norm_wrapper = None
+        while hasattr(current_env, "env"):
+            from environment_setup import ObsNormWrapper
+            if isinstance(current_env, ObsNormWrapper):
+                obs_norm_wrapper = current_env
+                break
+            current_env = current_env.env
+        if isinstance(current_env, ObsNormWrapper):
+            obs_norm_wrapper = current_env
+
+        if obs_norm_wrapper is not None:
+            stats_path = os.path.join(args.log_dir, "obs_stats.npz")
+            obs_norm_wrapper.save_stats(stats_path)
+            print(f"Saved observation normalization stats to {stats_path}")
+
+
 
 if __name__ == "__main__":
     main()

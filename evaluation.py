@@ -161,6 +161,7 @@ def evaluate_policy(
     verbose: bool = True,
     save_dir: Optional[str] = None,
     render_mode: bool = False,
+    obs_stats_path: Optional[str] = None,
 ) -> EvaluationMetrics:
     """
     Evaluates a controller across multiple randomized episodes.
@@ -189,6 +190,8 @@ def evaluate_policy(
         Whether to print per-episode results.
     save_dir : str or None
         If provided, saves per-episode results as JSON.
+    obs_stats_path : str or None
+        If provided, loads observation normalization stats from this file.
 
     Returns
     -------
@@ -205,6 +208,19 @@ def evaluate_policy(
         update_obs_stats=False,     # freeze stats during evaluation
         render_mode=render_mode,
     )
+
+    if normalize_obs and obs_stats_path:
+        from environment_setup import ObsNormWrapper
+        curr = env
+        while hasattr(curr, "env") and not isinstance(curr, ObsNormWrapper):
+            curr = curr.env
+        if isinstance(curr, ObsNormWrapper):
+            if os.path.exists(obs_stats_path):
+                curr.load_stats(obs_stats_path)
+                if verbose:
+                    print(f"[Evaluation] Loaded observation normalization stats from {obs_stats_path}")
+            else:
+                print(f"[Warning] Normalization stats file not found at {obs_stats_path}. Using uninitialized stats.")
 
     results: List[EpisodeResult] = []
 
@@ -283,21 +299,21 @@ def print_report(metrics: EvaluationMetrics, controller_name: str = "Controller"
     """Prints a formatted evaluation report."""
     sep = "=" * 60
     print(f"\n{sep}")
-    print(f"  Evaluation Report — {controller_name}")
+    print(f"  Evaluation Report - {controller_name}")
     print(sep)
     print(f"  Episodes            : {metrics.n_episodes}")
-    print(f"  Mean reward         : {metrics.mean_reward:+.4f}  ± {metrics.std_reward:.4f}")
+    print(f"  Mean reward         : {metrics.mean_reward:+.4f}  +/- {metrics.std_reward:.4f}")
     print(f"  [min, max] reward   : [{metrics.min_reward:+.4f}, {metrics.max_reward:+.4f}]")
-    print(f"  Mean cost           : {metrics.mean_cost:.4f}  ± {metrics.std_cost:.4f}")
+    print(f"  Mean cost           : {metrics.mean_cost:.4f}  +/- {metrics.std_cost:.4f}")
     print(f"  Max cost (episode)  : {metrics.max_cost:.4f}")
     print(f"  Zero-cost episodes  : {metrics.zero_cost_rate*100:.1f}%")
     print(
         f"  Safe episodes       : {metrics.safe_episode_rate*100:.1f}%  "
-        f"(cost ≤ {metrics.cost_threshold})"
+        f"(cost <= {metrics.cost_threshold})"
     )
     print(f"  Mean episode length : {metrics.mean_episode_length:.1f} steps")
     print(f"  Combined score      : {metrics.combined_score:+.4f}  "
-          f"(R - {metrics.lambda_cost}·C)")
+          f"(R - {metrics.lambda_cost} * C)")
     print(sep)
 
 
@@ -367,16 +383,86 @@ def _save_results(
 
 
 
+def generate_and_save_stats(save_path: str, num_steps: int = 10000, controller = None):
+    """
+    Runs a policy (or random actions if None) for a few steps to collect observation normalization stats
+    and saves them to the specified path. This is useful if training did not save the stats.
+    """
+    print(f"[Evaluation] Generating observation normalization stats using the policy over {num_steps} steps...")
+    # Create the environment with update=True to accumulate stats
+    env = make_env(normalize_obs=True, update_obs_stats=True)
+    obs, info = env.reset(seed=42)
+    if controller is not None:
+        controller.reset(seed=42)
+    
+    for _ in range(num_steps):
+        if controller is not None:
+            action, _ = controller.act(obs)
+        else:
+            action = env.action_space.sample()
+        obs, reward, cost, terminated, truncated, info = env.step(action)
+        if terminated or truncated:
+            obs, info = env.reset()
+            if controller is not None:
+                controller.reset()
+            
+    # Find ObsNormWrapper and save stats
+    from environment_setup import ObsNormWrapper
+    curr = env
+    while hasattr(curr, "env") and not isinstance(curr, ObsNormWrapper):
+        curr = curr.env
+    
+    if isinstance(curr, ObsNormWrapper):
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        curr.save_stats(save_path)
+        print(f"[Evaluation] Saved generated normalization stats to {save_path}")
+    else:
+        print("[Error] Could not find ObsNormWrapper in environment.")
+    env.close()
+
+
 if __name__ == "__main__":
+    import argparse
+    from controllers import SACController, ScriptedController
 
-    env_tmp = make_env(normalize_obs=False, smooth_actions=False, render_mode=False)
-    ctrl = ScriptedController(env_tmp.action_space)
-    env_tmp.close()
+    parser = argparse.ArgumentParser(description="Evaluate a controller on SafetyRacecarButton2-v0")
+    parser.add_argument("--controller", type=str, default="sac", choices=["sac", "scripted"])
+    parser.add_argument("--model-path", type=str, default="runs/sac_baseline/best_model.zip")
+    parser.add_argument("--obs-stats-path", type=str, default="runs/sac_baseline/obs_stats.npz")
+    parser.add_argument("--n-episodes", type=int, default=20)
+    parser.add_argument("--render", action="store_true")
+    args = parser.parse_args()
 
+    # Step 1: Load the selected controller
+    if args.controller == "sac":
+        if not os.path.exists(args.model_path):
+            print(f"[Error] Model checkpoint not found at: {args.model_path}")
+            exit(1)
+        print(f"Loading SACController from {args.model_path}...")
+        ctrl = SACController(args.model_path)
+        controller_name = f"SAC ({os.path.basename(args.model_path)})"
+        normalize_obs = True
+    else:
+        ctrl = ScriptedController()
+        controller_name = "ScriptedController"
+        normalize_obs = False
+
+    # Step 2: For SAC, generate normalizer stats if they don't exist
+    if normalize_obs and not os.path.exists(args.obs_stats_path):
+        print(f"[Warning] Normalization stats not found at {args.obs_stats_path}")
+        print("We will run the policy for 10,000 steps to automatically generate the stats file...")
+        generate_and_save_stats(args.obs_stats_path, num_steps=10000, controller=ctrl)
+
+    # Step 3: Run the evaluation
+    print(f"Starting evaluation of {controller_name} over {args.n_episodes} episodes...")
     metrics = evaluate_policy(
         controller=ctrl,
-        n_episodes=10,
+        n_episodes=args.n_episodes,
+        normalize_obs=normalize_obs,
+        obs_stats_path=args.obs_stats_path if normalize_obs else None,
         verbose=True,
-        render_mode=True,
+        render_mode=args.render,
     )
-    print_report(metrics, controller_name="ScriptedCtrl")
+    print_report(metrics, controller_name=controller_name)
+
+
