@@ -268,7 +268,7 @@ def make_env(
     action_alpha: float = 0.8,
     frame_stack: int = 1,
     update_obs_stats: bool = True,
-    render_mode: str = None,
+    render_mode: bool = False,
 ) -> gymnasium.Env:
     """
     Creates and wraps the SafetyRacecarButton2-v0 environment.
@@ -288,14 +288,17 @@ def make_env(
     update_obs_stats : bool
         Whether to update the running observation statistics.
         Set to False during evaluation.
-    render_mode : str or None
-        Passed directly to safety_gymnasium.make().
+    render_mode : bool
+        Whether to render the environment.
 
     Returns
     -------
     gymnasium.Env
         The wrapped environment.
     """
+
+    render_mode = "human" if render_mode else None
+
     env = safety_gymnasium.make(
         "SafetyRacecarButton2-v0",
         render_mode=render_mode,

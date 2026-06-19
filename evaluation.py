@@ -16,6 +16,7 @@ Rules reminder
 """
 
 import numpy as np
+from controllers import RandomController
 from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Dict, Any
 import json
@@ -159,6 +160,7 @@ def evaluate_policy(
     lambda_cost: float = 1.0,
     verbose: bool = True,
     save_dir: Optional[str] = None,
+    render_mode: bool = False,
 ) -> EvaluationMetrics:
     """
     Evaluates a controller across multiple randomized episodes.
@@ -201,6 +203,7 @@ def evaluate_policy(
         action_alpha=action_alpha,
         frame_stack=frame_stack,
         update_obs_stats=False,     # freeze stats during evaluation
+        render_mode=render_mode,
     )
 
     results: List[EpisodeResult] = []
@@ -363,28 +366,10 @@ def _save_results(
     print(f"[Evaluation] Results saved to {save_dir}")
 
 
-# ---------------------------------------------------------------------------
-# Example usage
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    # Example: evaluate the RandomController (from controllers.py) and the
-    # placeholder BaseController.
-    # Replace with your actual controller imports.
 
-    class RandomController:
-        """Minimal example: random policy."""
-        def __init__(self, action_space):
-            self.action_space = action_space
-
-        def reset(self, seed=None):
-            pass
-
-        def act(self, observation):
-            return self.action_space.sample(), {}
-
-    # Build env just to get action space
-    env_tmp = make_env(normalize_obs=False, smooth_actions=False)
+    env_tmp = make_env(normalize_obs=False, smooth_actions=False, render_mode=False)
     ctrl = RandomController(env_tmp.action_space)
     env_tmp.close()
 
@@ -392,5 +377,6 @@ if __name__ == "__main__":
         controller=ctrl,
         n_episodes=3,
         verbose=True,
+        render_mode=True,
     )
     print_report(metrics, controller_name="RandomController")
