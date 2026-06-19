@@ -23,10 +23,6 @@ It MUST NOT modify the environment, reward, cost, or termination.
 import numpy as np
 
 
-# ---------------------------------------------------------------------------
-# Base interface
-# ---------------------------------------------------------------------------
-
 class Controller:
     """
     Benchmark controller interface.
@@ -68,9 +64,6 @@ class Controller:
         raise NotImplementedError("Subclasses must implement act().")
 
 
-# ---------------------------------------------------------------------------
-# Simple baseline 1: Random Policy
-# ---------------------------------------------------------------------------
 
 class RandomController(Controller):
     """
@@ -88,9 +81,6 @@ class RandomController(Controller):
         return action, {"policy": "random"}
 
 
-# ---------------------------------------------------------------------------
-# Team controller stub — FILL THIS IN
-# ---------------------------------------------------------------------------
 
 class TeamController(Controller):
     """

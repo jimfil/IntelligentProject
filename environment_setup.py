@@ -13,8 +13,29 @@ Rules:
     model-based planning.
 """
 
+import dataclasses
 import numpy as np
 import gymnasium
+
+# Patch dataclasses to allow numpy arrays as default values (compatibility for Python 3.11+)
+_orig_get_field = dataclasses._get_field
+def _patched_get_field(cls, a_name, a_type, default_kw_only):
+    default = getattr(cls, a_name, dataclasses.MISSING)
+    if isinstance(default, np.ndarray):
+        placeholder = tuple(default.tolist())
+        setattr(cls, a_name, placeholder)
+        try:
+            f = _orig_get_field(cls, a_name, a_type, default_kw_only)
+            f.default = default
+            setattr(cls, a_name, default)
+            return f
+        except Exception:
+            setattr(cls, a_name, default)
+            raise
+    return _orig_get_field(cls, a_name, a_type, default_kw_only)
+
+dataclasses._get_field = _patched_get_field
+
 import safety_gymnasium
 
 
@@ -87,6 +108,10 @@ class ObsNormWrapper(gymnasium.ObservationWrapper):
         self.update = update
         self.clip = clip
 
+    def step(self, action):
+        obs, reward, cost, terminated, truncated, info = self.env.step(action)
+        return self.observation(obs), reward, cost, terminated, truncated, info
+
     def observation(self, obs: np.ndarray) -> np.ndarray:
         obs = np.asarray(obs, dtype=np.float64)
         if self.update:
@@ -124,6 +149,10 @@ class ActionSmoothingWrapper(gymnasium.ActionWrapper):
         self.alpha = alpha
         self._prev_action = None
 
+    def step(self, action):
+        obs, reward, cost, terminated, truncated, info = self.env.step(self.action(action))
+        return obs, reward, cost, terminated, truncated, info
+
     def action(self, action: np.ndarray) -> np.ndarray:
         action = np.asarray(action, dtype=np.float32)
         if self._prev_action is None:
@@ -160,6 +189,10 @@ class FrameStackWrapper(gymnasium.ObservationWrapper):
             low=low, high=high, dtype=np.float32
         )
         self._frames = np.zeros(stacked_shape, dtype=np.float32)
+
+    def step(self, action):
+        obs, reward, cost, terminated, truncated, info = self.env.step(action)
+        return self.observation(obs), reward, cost, terminated, truncated, info
 
     def observation(self, obs: np.ndarray) -> np.ndarray:
         obs = np.asarray(obs, dtype=np.float32)
