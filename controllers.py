@@ -50,6 +50,8 @@ class ScriptedController(Controller):
 
     def __init__(self, action_space):
         self.action_space = action_space
+        self.last_steering = 0.0
+        self.last_steering = 0.0  # For smooth steering transitions during reverse
 
     def _parse_obs(self, observation: np.ndarray):
         # If frame stacking is enabled, the most recent frame (76 dimensions) 
@@ -67,6 +69,9 @@ class ScriptedController(Controller):
             "gremlins_lidar": latest_obs[60:76],
         }
 
+    def reset(self, seed=None):
+        self.last_steering = 0.0
+
     def act(self, observation: np.ndarray):
         sensors = self._parse_obs(observation)
         
@@ -81,27 +86,52 @@ class ScriptedController(Controller):
         
         # 3. Control velocity & steering: move forward, or reverse if the goal is behind
         closest_goal = np.max(sensors["goal_lidar"])
-        
-        if np.abs(goal_angle) > 2.0:
-            # Goal is behind, so we reverse
+
+        # normalize goal angle to [-pi, pi]
+        goal_angle_normalized = np.arctan2(np.sin(goal_angle), np.cos(goal_angle))
+        angle_abs = np.abs(goal_angle_normalized)
+
+        # Compare front vs rear sector lidar to decide whether to hit with rear
+        angles = bin_angles
+        # widen front/rear sectors so rear is detected more easily (front/rear ±60°)
+        front_mask = np.abs(angles) <= (np.pi / 3)
+        rear_mask = np.abs(np.abs(angles) - np.pi) <= (np.pi / 3)
+        front_max = float(np.max(sensors["goal_lidar"][front_mask]))
+        rear_max = float(np.max(sensors["goal_lidar"][rear_mask]))
+
+        hit_with_rear = False
+        # relax thresholds so more targets count as 'rear-closer'
+        REAR_STRONGER_FACTOR = 0.95
+        REAR_MIN_DIST = 0.05
+        REVERSE_ANGLE_THRESH = np.pi / 2
+
+        use_reverse = (rear_max > front_max * REAR_STRONGER_FACTOR and rear_max > REAR_MIN_DIST) or angle_abs > REVERSE_ANGLE_THRESH
+
+        if use_reverse:
+            # Prefer reversing when the reverse direction is closer to the target
+            if rear_max > front_max * REAR_STRONGER_FACTOR and rear_max > REAR_MIN_DIST:
+                hit_with_rear = True
             velocity = -4.0
-            # Align the rear of the car with the goal
-            if goal_angle > 0:
-                rear_angle = goal_angle - np.pi
+            # rear-facing angle (flip by pi)
+            if goal_angle_normalized > 0:
+                rear_angle = goal_angle_normalized - np.pi
             else:
-                rear_angle = goal_angle + np.pi
-            steering = np.clip(rear_angle, -0.785, 0.785)
+                rear_angle = goal_angle_normalized + np.pi
+            steer_target = np.clip(rear_angle, -0.785, 0.785)
+            steering = 0.75 * steer_target + 0.25 * self.last_steering
+            steering = np.clip(steering, -0.785, 0.785)
         else:
             # Goal is in front, move forward
             steering = np.clip(goal_angle, -0.785, 0.785)
-            
+
             if np.abs(goal_angle) > 0.5:
                 velocity = 2.0  # Slow down to turn effectively
             elif closest_goal > 0.6:
                 velocity = 3.0  # Slow down when near the goal to prevent overshooting
             else:
                 velocity = 7.0  # Speed up when heading is aligned and goal is far
-            
+
+        self.last_steering = steering
         action = np.array([velocity, steering], dtype=np.float32)
         
         info = {
