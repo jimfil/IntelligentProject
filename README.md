@@ -37,8 +37,12 @@ project1_safe_nav/
 
 ## Installation
 
+To ensure compatibility and resolve package version conflicts (especially on Python 3.11+), install the dependencies in this specific order:
+
 ```bash
-pip install -r requirements.txt
+pip install pygame mujoco==2.3.3 gymnasium-robotics==1.2.2 xmltodict pyyaml
+pip install safety-gymnasium --no-deps
+pip install gymnasium==0.28.1 numpy==1.23.5 torch>=2.0.0 matplotlib>=3.7.0 tensorboard>=2.13.0 imageio>=2.31.0 imageio-ffmpeg>=0.4.8 tqdm>=4.65.0 pandas>=2.0.0
 ```
 
 ## Quick Start

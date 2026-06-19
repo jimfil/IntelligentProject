@@ -16,7 +16,7 @@ Rules reminder
 """
 
 import numpy as np
-from controllers import RandomController
+from controllers import ScriptedController
 from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Dict, Any
 import json
@@ -370,12 +370,12 @@ def _save_results(
 if __name__ == "__main__":
 
     env_tmp = make_env(normalize_obs=False, smooth_actions=False, render_mode=False)
-    ctrl = RandomController(env_tmp.action_space)
+    ctrl = ScriptedController(env_tmp.action_space)
     env_tmp.close()
 
     metrics = evaluate_policy(
         controller=ctrl,
-        n_episodes=3,
+        n_episodes=10,
         verbose=True,
         render_mode=True,
     )

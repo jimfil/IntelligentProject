@@ -1,25 +1,3 @@
-"""
-Project 1: Safe Mobile Robot Button Navigation
-Controller interface and placeholder classes.
-
-Each team must implement its own controller here.
-This file defines the base interface and provides two minimal examples:
-
-  1. RandomController   — random policy (simple baseline)
-  2. BaseController     — stub that teams must fill in
-
-The benchmark interface requires:
-
-    class Controller:
-        def reset(self, seed=None):
-            ...
-        def act(self, observation):
-            return action, info   # action: np.ndarray, info: dict
-
-The 'info' dict may be used for logging/visualization only.
-It MUST NOT modify the environment, reward, cost, or termination.
-"""
-
 import numpy as np
 
 
@@ -65,20 +43,75 @@ class Controller:
 
 
 
-class RandomController(Controller):
+class ScriptedController(Controller):
     """
-    Random policy — samples uniformly from the action space.
-
-    This serves as the simplest baseline to verify the pipeline works.
-    It should perform poorly on both reward and safety metrics.
+    Scripted Controller that parses the observation vector into individual sensors.
     """
 
     def __init__(self, action_space):
         self.action_space = action_space
 
+    def _parse_obs(self, observation: np.ndarray):
+        # If frame stacking is enabled, the most recent frame (76 dimensions) 
+        # is always located at the end of the flattened observation vector.
+        latest_obs = observation[-76:]
+        
+        return {
+            "accelerometer": latest_obs[0:3],
+            "velocimeter": latest_obs[3:6],
+            "gyro": latest_obs[6:9],
+            "magnetometer": latest_obs[9:12],
+            "buttons_lidar": latest_obs[12:28],
+            "goal_lidar": latest_obs[28:44],
+            "hazards_lidar": latest_obs[44:60],
+            "gremlins_lidar": latest_obs[60:76],
+        }
+
     def act(self, observation: np.ndarray):
-        action = self.action_space.sample()
-        return action, {"policy": "random"}
+        sensors = self._parse_obs(observation)
+        
+        # 1. Find the bin with the highest reading (where the goal is closest/strongest)
+        best_bin = np.argmax(sensors["goal_lidar"])
+        
+        # 2. Map bin index (0 to 15) to a relative angle in radians [-pi, pi]
+        # Bin 0 is 0 (directly in front), bin 4 is pi/2 (left), bin 12 is -pi/2 (right)
+        bin_angles = np.linspace(0, 2 * np.pi, 16, endpoint=False)
+        bin_angles = (bin_angles + np.pi) % (2 * np.pi) - np.pi
+        goal_angle = bin_angles[best_bin]
+        
+        # 3. Control velocity & steering: move forward, or reverse if the goal is behind
+        closest_goal = np.max(sensors["goal_lidar"])
+        
+        if np.abs(goal_angle) > 2.0:
+            # Goal is behind, so we reverse
+            velocity = -4.0
+            # Align the rear of the car with the goal
+            if goal_angle > 0:
+                rear_angle = goal_angle - np.pi
+            else:
+                rear_angle = goal_angle + np.pi
+            steering = np.clip(rear_angle, -0.785, 0.785)
+        else:
+            # Goal is in front, move forward
+            steering = np.clip(goal_angle, -0.785, 0.785)
+            
+            if np.abs(goal_angle) > 0.5:
+                velocity = 2.0  # Slow down to turn effectively
+            elif closest_goal > 0.6:
+                velocity = 3.0  # Slow down when near the goal to prevent overshooting
+            else:
+                velocity = 7.0  # Speed up when heading is aligned and goal is far
+            
+        action = np.array([velocity, steering], dtype=np.float32)
+        
+        info = {
+            "policy": "scripted_move_to_goal",
+            "goal_bin": int(best_bin),
+            "goal_angle": float(goal_angle),
+            "closest_goal_lidar": float(np.max(sensors["goal_lidar"])),
+            "closest_hazard_lidar": float(np.max(sensors["hazards_lidar"])),
+        }
+        return action, info
 
 
 
