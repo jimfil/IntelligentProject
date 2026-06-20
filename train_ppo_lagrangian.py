@@ -143,6 +143,53 @@ class LagrangianCallback(BaseCallback):
             self.episode_costs.clear()
 
 
+class StatsSyncEvalCallback(EvalCallback):
+    """
+    EvalCallback that synchronizes observation normalization stats
+    from the training environment to the evaluation environment before running evaluation.
+    """
+    def __init__(self, train_env, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.train_env = train_env
+
+    def _on_step(self) -> bool:
+        if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
+            try:
+                # Find ObsNormWrapper in train_env
+                train_wrapper = None
+                current_env = self.train_env.envs[0]
+                while hasattr(current_env, "env"):
+                    from environment_setup import ObsNormWrapper
+                    if isinstance(current_env, ObsNormWrapper):
+                        train_wrapper = current_env
+                        break
+                    current_env = current_env.env
+                if isinstance(current_env, ObsNormWrapper):
+                    train_wrapper = current_env
+
+                # Find ObsNormWrapper in eval_env
+                eval_wrapper = None
+                current_env = self.eval_env.envs[0]
+                while hasattr(current_env, "env"):
+                    from environment_setup import ObsNormWrapper
+                    if isinstance(current_env, ObsNormWrapper):
+                        eval_wrapper = current_env
+                        break
+                    current_env = current_env.env
+                if isinstance(current_env, ObsNormWrapper):
+                    eval_wrapper = current_env
+
+                if train_wrapper is not None and eval_wrapper is not None:
+                    eval_wrapper.rms.mean = train_wrapper.rms.mean.copy()
+                    eval_wrapper.rms.var = train_wrapper.rms.var.copy()
+                    eval_wrapper.rms.count = train_wrapper.rms.count
+                    if self.verbose > 0:
+                        print("[Evaluation Stats Sync] Synchronized normalization stats to eval_env.")
+            except Exception as e:
+                print(f"[Warning] Failed to synchronize normalizer stats: {e}")
+        return super()._on_step()
+
+
 def build_env(
     seed: int,
     normalize_obs: bool,
@@ -206,7 +253,7 @@ def main():
     parser.add_argument("--n-epochs", type=int, default=10)
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--cost-limit", type=float, default=25.0)
-    parser.add_argument("--lagrangian-lr", type=float, default=0.05)
+    parser.add_argument("--lagrangian-lr", type=float, default=0.02)
     parser.add_argument("--eval-freq", type=int, default=10_000)
     parser.add_argument("--eval-episodes", type=int, default=5)
     parser.add_argument("--device", type=str, default="auto")
@@ -258,8 +305,9 @@ def main():
             cost_limit=args.cost_limit,
             lr=args.lagrangian_lr,
         ),
-        EvalCallback(
-            eval_env,
+        StatsSyncEvalCallback(
+            train_env=train_env,
+            eval_env=eval_env,
             best_model_save_path=args.log_dir,
             log_path=args.log_dir,
             eval_freq=args.eval_freq,
