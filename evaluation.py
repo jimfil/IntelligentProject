@@ -423,35 +423,48 @@ def generate_and_save_stats(save_path: str, num_steps: int = 10000, controller =
 
 if __name__ == "__main__":
     import argparse
-    from controllers import SACController, ScriptedController
+    from controllers import SACController, ScriptedController, ToController
 
     parser = argparse.ArgumentParser(description="Evaluate a controller on SafetyRacecarButton2-v0")
-    parser.add_argument("--controller", type=str, default="sac", choices=["sac", "scripted"])
-    parser.add_argument("--model-path", type=str, default="runs/sac_baseline/best_model.zip")
-    parser.add_argument("--obs-stats-path", type=str, default="runs/sac_baseline/obs_stats.npz")
+    parser.add_argument("--controller", type=str, default="sac", choices=["sac", "scripted", "ppo_lagrangian"])
+    parser.add_argument("--model-path", type=str, default=None)
+    parser.add_argument("--obs-stats-path", type=str, default=None)
     parser.add_argument("--n-episodes", type=int, default=20)
     parser.add_argument("--render", action="store_true")
     args = parser.parse_args()
 
     # Step 1: Load the selected controller
     if args.controller == "sac":
-        if not os.path.exists(args.model_path):
-            print(f"[Error] Model checkpoint not found at: {args.model_path}")
+        model_path = args.model_path or "runs/sac_baseline/best_model.zip"
+        obs_stats_path = args.obs_stats_path or "runs/sac_baseline/obs_stats.npz"
+        if not os.path.exists(model_path):
+            print(f"[Error] Model checkpoint not found at: {model_path}")
             exit(1)
-        print(f"Loading SACController from {args.model_path}...")
-        ctrl = SACController(args.model_path)
-        controller_name = f"SAC ({os.path.basename(args.model_path)})"
+        print(f"Loading SACController from {model_path}...")
+        ctrl = SACController(model_path)
+        controller_name = f"SAC ({os.path.basename(model_path)})"
+        normalize_obs = True
+    elif args.controller == "ppo_lagrangian":
+        model_path = args.model_path or "runs/ppo_lagrangian/best_model.zip"
+        obs_stats_path = args.obs_stats_path or "runs/ppo_lagrangian/obs_stats.npz"
+        if not os.path.exists(model_path):
+            print(f"[Error] Model checkpoint not found at: {model_path}")
+            exit(1)
+        print(f"Loading ToController from {model_path}...")
+        ctrl = ToController(model_path)
+        controller_name = f"ToController ({os.path.basename(model_path)})"
         normalize_obs = True
     else:
         ctrl = ScriptedController()
         controller_name = "ScriptedController"
         normalize_obs = False
+        obs_stats_path = None
 
-    # Step 2: For SAC, generate normalizer stats if they don't exist
-    if normalize_obs and not os.path.exists(args.obs_stats_path):
-        print(f"[Warning] Normalization stats not found at {args.obs_stats_path}")
+    # Step 2: Generate normalizer stats if they don't exist
+    if normalize_obs and obs_stats_path and not os.path.exists(obs_stats_path):
+        print(f"[Warning] Normalization stats not found at {obs_stats_path}")
         print("We will run the policy for 10,000 steps to automatically generate the stats file...")
-        generate_and_save_stats(args.obs_stats_path, num_steps=10000, controller=ctrl)
+        generate_and_save_stats(obs_stats_path, num_steps=10000, controller=ctrl)
 
     # Step 3: Run the evaluation
     print(f"Starting evaluation of {controller_name} over {args.n_episodes} episodes...")
@@ -459,7 +472,7 @@ if __name__ == "__main__":
         controller=ctrl,
         n_episodes=args.n_episodes,
         normalize_obs=normalize_obs,
-        obs_stats_path=args.obs_stats_path if normalize_obs else None,
+        obs_stats_path=obs_stats_path,
         verbose=True,
         render_mode=args.render,
     )

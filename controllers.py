@@ -243,50 +243,28 @@ class SACController(Controller):
         }
         return action, info
 
-class TeamController(Controller):
+
+class ToController(Controller):
     """
-    Team's main controller — implement your approach here.
-
-    You may use:
-      - Classical control  (PID, LQR, MPC, potential fields, etc.)
-      - Safe RL            (CPO, PPO-Lagrangian, TRPO-Lagrangian, etc.)
-      - Standard RL        (PPO, SAC, TD3, etc.)
-      - Hybrid approaches
-
-    Allowed techniques (benchmark rules):
-      - Observation normalization (handled by environment_setup.py wrappers)
-      - Action smoothing          (handled by environment_setup.py wrappers)
-      - Frame stacking            (handled by environment_setup.py wrappers)
-      - Recurrent state (e.g. LSTM hidden state — reset in reset())
-      - Memory buffers (replay buffer, demonstrations)
-      - Learned representations
-      - Model-based planning
-
-    Forbidden (benchmark rules):
-      - Modifying reward, cost, termination logic, random seeds, or
-        the scoring script.
+    Inference-time wrapper for a trained Stable-Baselines3 PPO policy.
     """
 
-    def __init__(self):
-        # Initialize your model, policy network, parameters, etc.
-        # Example:
-        #   self.policy = MyPolicyNetwork(obs_dim=..., act_dim=2)
-        #   self.policy.load("checkpoints/best_policy.pt")
-        pass
+    def __init__(self, model_path: str):
+        from stable_baselines3 import PPO
+        self.model_path = model_path
+        self.model = PPO.load(model_path)
 
     def reset(self, seed=None):
-        # Reset internal state at the start of each episode.
-        # Example for a recurrent policy:
-        #   self.hidden_state = torch.zeros(1, self.hidden_size)
         pass
 
     def act(self, observation: np.ndarray):
-        # TODO: implement your controller logic here.
-        # Return (action, info) where action is a numpy array compatible
-        # with the environment's action space:
-        #   action[0] — rear-wheel velocity  ∈ [-1, 1]
-        #   action[1] — front-wheel steering ∈ [-1, 1]
-        raise NotImplementedError(
-            "TeamController.act() is not implemented. "
-            "Replace this stub with your actual controller."
-        )
+        obs = np.asarray(observation, dtype=np.float32)
+        action, _ = self.model.predict(obs, deterministic=True)
+        action = np.asarray(action, dtype=np.float32)
+
+        info = {
+            "policy": "ppo_lagrangian",
+            "model_path": self.model_path,
+        }
+        return action, info
+
