@@ -433,6 +433,7 @@ if __name__ == "__main__":
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--smooth-actions", action="store_true", help="Apply action smoothing wrapper")
     parser.add_argument("--action-alpha", type=float, default=0.8, help="EMA coefficient for action smoothing")
+    parser.add_argument("--frame-stack", type=int, default=1, help="Number of frames to stack")
     args = parser.parse_args()
 
     # Step 1: Load the selected controller
@@ -479,6 +480,7 @@ if __name__ == "__main__":
         obs_stats_path=obs_stats_path,
         verbose=True,
         render_mode=args.render,
+        frame_stack=args.frame_stack
     )
     print_report(metrics, controller_name=controller_name)
 

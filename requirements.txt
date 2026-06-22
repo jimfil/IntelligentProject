@@ -7,7 +7,7 @@ xmltodict
 pyyaml
 stable-baselines3==2.1.0
 rich
-
+safety-gymnasium
 torch>=2.0.0
 matplotlib>=3.7.0
 tensorboard>=2.13.0

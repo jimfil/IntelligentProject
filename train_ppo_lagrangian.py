@@ -89,6 +89,7 @@ class CostLoggingCallback(BaseCallback):
                     self.logger.record("rollout/ep_cost", float(ep["c"]))
                 if "r" in ep:
                     self.episode_rewards.append(float(ep["r"]))
+                    self.logger.record("rollout/ep_shaped_reward", float(ep["r"]))
                 if "l" in ep:
                     self.episode_lengths.append(int(ep["l"]))
 
@@ -96,6 +97,11 @@ class CostLoggingCallback(BaseCallback):
             self.logger.record(
                 "rollout/ep_cost_mean_100",
                 float(np.mean(self.episode_costs[-100:])),
+            )
+        if self.episode_rewards:
+            self.logger.record(
+                "rollout/ep_shaped_reward_mean_100",
+                float(np.mean(self.episode_rewards[-100:])),
             )
         return True
 
@@ -111,12 +117,14 @@ class LagrangianCallback(BaseCallback):
         beta_holder: List[float],
         cost_limit: float = 25.0,
         lr: float = 0.05,
+        max_beta: float = 10.0,
         verbose: int = 0,
     ):
         super().__init__(verbose)
         self.beta_holder = beta_holder
         self.cost_limit = cost_limit
         self.lr = lr
+        self.max_beta = max_beta
         self.episode_costs: List[float] = []
 
     def _on_step(self) -> bool:
@@ -133,7 +141,7 @@ class LagrangianCallback(BaseCallback):
             avg_cost = np.mean(self.episode_costs)
             # Dynamic multiplier update
             new_beta = self.beta_holder[0] + self.lr * (avg_cost - self.cost_limit)
-            self.beta_holder[0] = max(0.0, new_beta)
+            self.beta_holder[0] = min(max(0.0, new_beta), self.max_beta)
             self.logger.record("train/lagrangian_beta", self.beta_holder[0])
             self.logger.record("train/rollout_cost_mean", avg_cost)
             print(
@@ -244,7 +252,7 @@ def main():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--log-dir", type=str, default="runs/ppo_lagrangian")
     parser.add_argument("--normalize-obs", action="store_true", default=True)
-    parser.add_argument("--smooth-actions", action="store_true")
+    parser.add_argument("--smooth-actions", action="store_true", default=True)
     parser.add_argument("--action-alpha", type=float, default=0.8)
     parser.add_argument("--frame-stack", type=int, default=1)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
@@ -257,6 +265,8 @@ def main():
     parser.add_argument("--eval-freq", type=int, default=10_000)
     parser.add_argument("--eval-episodes", type=int, default=5)
     parser.add_argument("--device", type=str, default="auto")
+    parser.add_argument("--ent-coef", type=float, default=0.0, help="Entropy coefficient for PPO")
+    parser.add_argument("--max-beta", type=float, default=10.0, help="Maximum Lagrangian multiplier")
     args = parser.parse_args()
 
     os.makedirs(args.log_dir, exist_ok=True)
@@ -296,6 +306,7 @@ def main():
         tensorboard_log=args.log_dir,
         seed=args.seed,
         device=args.device,
+        ent_coef=args.ent_coef,
     )
 
     callbacks = CallbackList([
