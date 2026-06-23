@@ -250,7 +250,13 @@ def main():
     parser = argparse.ArgumentParser(description="Train PPO-Lagrangian on SafetyRacecarButton2-v0")
     parser.add_argument("--total-timesteps", type=int, default=300_000)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--log-dir", type=str, default="runs/ppo_lagrangian")
+    
+    # Resolve the project root directory (parent of src)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir) if os.path.basename(script_dir) == "src" else script_dir
+    default_log_dir = os.path.join(project_root, "runs", "ppo_lagrangian")
+    
+    parser.add_argument("--log-dir", type=str, default=default_log_dir)
     parser.add_argument("--normalize-obs", action="store_true", default=True)
     parser.add_argument("--smooth-actions", action="store_true", default=True)
     parser.add_argument("--action-alpha", type=float, default=0.8)

@@ -147,7 +147,13 @@ def main():
     parser = argparse.ArgumentParser(description="Train SAC baseline on SafetyRacecarButton2-v0")
     parser.add_argument("--total-timesteps", type=int, default=300_000)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--log-dir", type=str, default="runs/sac_baseline")
+    
+    # Resolve the project root directory (parent of src)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir) if os.path.basename(script_dir) == "src" else script_dir
+    default_log_dir = os.path.join(project_root, "runs", "sac_baseline")
+    
+    parser.add_argument("--log-dir", type=str, default=default_log_dir)
     parser.add_argument("--normalize-obs", action="store_true")
     parser.add_argument("--smooth-actions", action="store_true")
     parser.add_argument("--action-alpha", type=float, default=0.8)
@@ -242,7 +248,6 @@ def main():
             stats_path = os.path.join(args.log_dir, "obs_stats.npz")
             obs_norm_wrapper.save_stats(stats_path)
             print(f"Saved observation normalization stats to {stats_path}")
-
 
 
 if __name__ == "__main__":
