@@ -267,4 +267,3 @@ class ToController(Controller):
             "model_path": self.model_path,
         }
         return action, info
-

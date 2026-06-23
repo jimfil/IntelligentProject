@@ -436,10 +436,14 @@ if __name__ == "__main__":
     parser.add_argument("--frame-stack", type=int, default=1, help="Number of frames to stack")
     args = parser.parse_args()
 
+    # Resolve project root folder (parent of src)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir) if os.path.basename(script_dir) == "src" else script_dir
+
     # Step 1: Load the selected controller
     if args.controller == "sac":
-        model_path = args.model_path or "runs/sac_baseline/best_model.zip"
-        obs_stats_path = args.obs_stats_path or "runs/sac_baseline/obs_stats.npz"
+        model_path = args.model_path or os.path.join(project_root, "runs/sac_baseline/best_model.zip")
+        obs_stats_path = args.obs_stats_path or os.path.join(project_root, "runs/sac_baseline/obs_stats.npz")
         if not os.path.exists(model_path):
             print(f"[Error] Model checkpoint not found at: {model_path}")
             exit(1)
@@ -448,8 +452,8 @@ if __name__ == "__main__":
         controller_name = f"SAC ({os.path.basename(model_path)})"
         normalize_obs = True
     elif args.controller == "ppo_lagrangian":
-        model_path = args.model_path or "runs/ppo_lagrangian/best_model.zip"
-        obs_stats_path = args.obs_stats_path or "runs/ppo_lagrangian/obs_stats.npz"
+        model_path = args.model_path or os.path.join(project_root, "runs/ppo_lagrangian/best_model.zip")
+        obs_stats_path = args.obs_stats_path or os.path.join(project_root, "runs/ppo_lagrangian/obs_stats.npz")
         if not os.path.exists(model_path):
             print(f"[Error] Model checkpoint not found at: {model_path}")
             exit(1)
@@ -483,5 +487,3 @@ if __name__ == "__main__":
         frame_stack=args.frame_stack
     )
     print_report(metrics, controller_name=controller_name)
-
-

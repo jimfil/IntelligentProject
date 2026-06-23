@@ -1,0 +1,55 @@
+services:
+  # TensorBoard service to monitor training progress
+  tensorboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: safe-nav-base
+    command: tensorboard --logdir runs --host 0.0.0.0 --port 6006
+    ports:
+      - "6006:6006"
+    volumes:
+      - .:/app
+    restart: always
+
+  # SAC training baseline
+  train-sac:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: safe-nav-base
+    command: python src/train_sac.py --normalize-obs --total-timesteps 3000000
+    volumes:
+      - .:/app
+
+  # PPO-Lagrangian training safety baseline
+  train-ppo-lagrangian:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: safe-nav-base
+    command: python src/train_ppo_lagrangian.py --total-timesteps 3000000
+    volumes:
+      - .:/app
+
+  # Evaluation script
+  evaluate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: safe-nav-base
+    command: python src/evaluation.py --controller scripted --n-episodes 20
+    volumes:
+      - .:/app
+
+  # Interactive shell for custom commands or debugging
+  shell:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: safe-nav-base
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/app
+    command: bash
