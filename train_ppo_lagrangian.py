@@ -55,6 +55,10 @@ class SafetyToGymnasiumWrapper(gym.Wrapper):
         self.episode_reward += float(reward)
         self.episode_length += 1
 
+        if self.episode_cost > 50.0:
+            terminated = True
+            reward -= 5.0
+
         info = dict(info)
         info["cost"] = float(cost)
         info["episode_cost"] = self.episode_cost
