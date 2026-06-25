@@ -56,17 +56,17 @@ services:
       "--smooth-actions",
       "--action-alpha", "0.8",
       "--frame-stack", "1",
-      "--learning-rate", "3e-4",
-      "--batch-size", "64",
-      "--n-steps", "2048",
+      "--learning-rate", "0.0003",
+      "--batch-size", "512",
+      "--n-steps", "4096",
       "--n-epochs", "10",
       "--gamma", "0.99",
       "--cost-limit", "25.0",
-      "--lagrangian-lr", "0.02",
+      "--lagrangian-lr", "0.002",
       "--eval-freq", "10000",
       "--eval-episodes", "5",
       "--device", "auto",
-      "--ent-coef", "0.0",
+      "--ent-coef", "0.02",
       "--max-beta", "10.0"
     ]
     volumes:

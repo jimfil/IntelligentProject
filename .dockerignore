@@ -8,6 +8,7 @@ __pycache__/
 *.pyo
 *.pyd
 .pytest_cache/
+documentation/
 runs/
 videos/
 evaluation_reports/

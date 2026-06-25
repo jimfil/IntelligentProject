@@ -1,6 +1,8 @@
 # Use an official Python 3.11 slim image as the base
 FROM python:3.11-slim
 
+ENV PYTHONUNBUFFERED=1
+
 # Prevent interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -25,8 +27,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Set environment variables for headless OpenGL rendering
-ENV MUJOCO_GL="osmesa"
-ENV PYOPENGL_PLATFORM="osmesa"
+ENV MUJOCO_GL="egl"
+ENV PYOPENGL_PLATFORM="egl"
 ENV SDL_VIDEODRIVER="dummy"
 ENV SDL_AUDIODRIVER="dummy"
 
