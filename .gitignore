@@ -15,3 +15,14 @@ logs/
 
 .vscode/
 .idea/
+
+# LaTeX auxiliary files
+*.aux
+*.log
+*.toc
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.blg
+*.bbl
