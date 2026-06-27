@@ -13,9 +13,13 @@ from environment_setup import make_env, ObsNormWrapper
 from controllers import ToController
 import safety_gymnasium
 
-# Hardcoded artifact directory for saving the videos
-ARTIFACT_DIR = r"C:\Users\User\.gemini\antigravity\brain\cbe383ed-e023-4ae7-b215-1c28ca8eb17d"
+# Artifact directory for saving the videos in this session
+ARTIFACT_DIR = r"C:\Users\dimit\.gemini\antigravity-ide\brain\01a2311c-9083-4cd7-bc7b-c04aad92bef7"
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# If running inside Docker (Linux container) or if the Windows directory structure does not exist:
+if os.name == 'posix' or not os.path.exists(os.path.dirname(ARTIFACT_DIR)):
+    ARTIFACT_DIR = os.path.join(PROJECT_DIR, "runs")
 
 def make_env_rgb_high_res(
     normalize_obs: bool = True,
@@ -102,18 +106,21 @@ def run_and_record_episode(controller, env, seed, video_paths, status_text, came
             
     # Save video to all requested paths
     for path in video_paths:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        print(f"Saving video to {path}...")
-        writer = imageio.get_writer(path, fps=30)
-        for f in tqdm(frames, desc=f"Writing {os.path.basename(path)}"):
-            writer.append_data(f)
-        writer.close()
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            print(f"Saving video to {path}...")
+            writer = imageio.get_writer(path, fps=30)
+            for f in tqdm(frames, desc=f"Writing {os.path.basename(path)}"):
+                writer.append_data(f)
+            writer.close()
+        except Exception as e:
+            print(f"[Warning] Failed to write video to {path}: {e}")
         
     return total_reward, total_cost, steps
 
 def main():
-    model_path = os.path.join(PROJECT_DIR, "runs/ppo_lagrangian/ppo_model2/best_model.zip")
-    obs_stats_path = os.path.join(PROJECT_DIR, "runs/ppo_lagrangian/ppo_model2/obs_stats.npz")
+    model_path = os.path.join(PROJECT_DIR, "runs/ppo_model2/best_model.zip")
+    obs_stats_path = os.path.join(PROJECT_DIR, "runs/ppo_model2/obs_stats.npz")
     
     print(f"Loading controller from {model_path}...")
     controller = ToController(model_path)
@@ -130,11 +137,11 @@ def main():
     
     success_paths_be = [
         os.path.join(ARTIFACT_DIR, "ppo_success_birds_eye.mp4"),
-        os.path.join(PROJECT_DIR, "runs/ppo_lagrangian/ppo_model2/success_demo_birds_eye.mp4")
+        os.path.join(PROJECT_DIR, "runs/ppo_model2/success_demo_birds_eye.mp4")
     ]
     failure_paths_be = [
         os.path.join(ARTIFACT_DIR, "ppo_failure_birds_eye.mp4"),
-        os.path.join(PROJECT_DIR, "runs/ppo_lagrangian/ppo_model2/failure_demo_birds_eye.mp4")
+        os.path.join(PROJECT_DIR, "runs/ppo_model2/failure_demo_birds_eye.mp4")
     ]
     
     print("\nRecording Success Birds-Eye Episode...")
@@ -145,31 +152,7 @@ def main():
     
     env_birds_eye.close()
     
-    # ----------------- 2. Record First-Person POV (vision) -----------------
-    env_first_person = make_env_rgb_high_res(
-        normalize_obs=True, 
-        obs_stats_path=obs_stats_path, 
-        camera_name="vision"
-    )
-    
-    success_paths_fp = [
-        os.path.join(ARTIFACT_DIR, "ppo_success.mp4"),
-        os.path.join(PROJECT_DIR, "runs/ppo_lagrangian/ppo_model2/success_demo.mp4")
-    ]
-    failure_paths_fp = [
-        os.path.join(ARTIFACT_DIR, "ppo_failure.mp4"),
-        os.path.join(PROJECT_DIR, "runs/ppo_lagrangian/ppo_model2/failure_demo.mp4")
-    ]
-    
-    print("\nRecording Success First-Person Episode...")
-    run_and_record_episode(controller, env_first_person, success_seed, success_paths_fp, "SAFE - SUCCESS", "vision")
-    
-    print("\nRecording Failure First-Person Episode...")
-    run_and_record_episode(controller, env_first_person, failure_seed, failure_paths_fp, "UNSAFE - FAILURE", "vision")
-    
-    env_first_person.close()
-    
-    print("\nFinished recording all high-resolution episodes successfully!")
+    print("\nFinished recording high-resolution episodes successfully!")
 
 if __name__ == "__main__":
     main()

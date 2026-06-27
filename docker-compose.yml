@@ -135,3 +135,13 @@ services:
     volumes:
       - .:/app
     command: bash
+
+  # Record high-resolution birds-eye view episodes
+  record:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: safe-nav-base
+    entrypoint: [ "xvfb-run", "-a", "python", "src/record.py" ]
+    volumes:
+      - .:/app
