@@ -46,19 +46,26 @@ class SafetyToGymnasiumWrapper(gym.Wrapper):
         self.episode_cost = 0.0
         self.episode_reward = 0.0
         self.episode_length = 0
+
+        self.prev_action = np.zeros(self.env.action_space.shape)
+
         return self.env.reset(**kwargs)
 
     def step(self, action):
         obs, reward, cost, terminated, truncated, info = self.env.step(action)
 
+        #quadratic smoothing penalty
+        action_diff = np.abs(action - self.prev_action)
+        squared_diff = np.sum(action_diff ** 2) 
+        smoothness_penalty = 0.01 * float(squared_diff)
+        reward -= smoothness_penalty
+        self.prev_action = action.copy()
+        
         self.episode_cost += float(cost)
         self.episode_reward += float(reward)
         self.episode_length += 1
 
-        if self.episode_cost > 50.0:
-            terminated = True
-            reward -= 5.0
-
+       
         info = dict(info)
         info["cost"] = float(cost)
         info["episode_cost"] = self.episode_cost
