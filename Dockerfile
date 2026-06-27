@@ -46,10 +46,7 @@ RUN pip install --no-cache-dir safety-gymnasium --no-deps
 
 # Step 3: Copy requirements.txt and install remaining core libraries
 COPY requirements.txt /app/requirements.txt
-# Filter out safety-gymnasium to prevent pip from resolving its conflicting dependencies
-RUN grep -v "safety-gymnasium" /app/requirements.txt > /app/requirements_filtered.txt && \
-    pip install --no-cache-dir -r /app/requirements_filtered.txt && \
-    rm /app/requirements_filtered.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy the rest of the application code into the container
 COPY . /app

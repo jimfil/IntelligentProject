@@ -18,73 +18,30 @@ services:
       context: .
       dockerfile: Dockerfile
     image: safe-nav-base
-    entrypoint: ["python", "src/train_sac.py"]
-    command: [
-      "--total-timesteps", "3000000",
-      "--seed", "0",
-      "--log-dir", "runs/sac_baseline",
-      "--normalize-obs",
-      "--action-alpha", "0.8",
-      "--frame-stack", "1",
-      "--learning-rate", "3e-4",
-      "--buffer-size", "200000",
-      "--batch-size", "256",
-      "--learning-starts", "5000",
-      "--gamma", "0.99",
-      "--tau", "0.005",
-      "--train-freq", "1",
-      "--gradient-steps", "1",
-      "--eval-freq", "10000",
-      "--eval-episodes", "5",
-      "--device", "auto"
-    ]
+    entrypoint: [ "python", "src/train_sac.py" ]
+    command: [ "--total-timesteps", "3000000", "--seed", "0", "--log-dir", "runs/sac", "--normalize-obs", "--action-alpha", "0.8", "--frame-stack", "1", "--learning-rate", "3e-4", "--buffer-size", "200000", "--batch-size", "256", "--learning-starts", "5000", "--gamma", "0.99", "--tau", "0.005", "--train-freq", "1", "--gradient-steps", "1", "--eval-freq", "10000", "--eval-episodes", "5", "--device", "auto" ]
     volumes:
       - .:/app
 
-  # PPO-Lagrangian training safety baseline
-  train-ppo-lagrangian:
+  # PPO training safety baseline
+  train-ppo:
     build:
       context: .
       dockerfile: Dockerfile
     image: safe-nav-base
-    entrypoint: ["python", "src/train_ppo_lagrangian.py"]
-    command: [
-      "--total-timesteps", "3000000",
-      "--seed", "0",
-      "--log-dir", "runs/ppo_lagrangian",
-      "--normalize-obs",
-      "--smooth-actions",
-      "--action-alpha", "0.8",
-      "--frame-stack", "1",
-      "--learning-rate", "0.0003",
-      "--batch-size", "512",
-      "--n-steps", "4096",
-      "--n-epochs", "10",
-      "--gamma", "0.99",
-      "--cost-limit", "25.0",
-      "--lagrangian-lr", "0.002",
-      "--eval-freq", "10000",
-      "--eval-episodes", "5",
-      "--device", "auto",
-      "--ent-coef", "0.02",
-      "--max-beta", "10.0"
-    ]
+    entrypoint: [ "python", "src/train_ppo_lagrangian.py" ]
+    command: [ "--total-timesteps", "3000000", "--seed", "0", "--log-dir", "runs/ppo_model", "--normalize-obs", "--smooth-actions", "--action-alpha", "0.8", "--frame-stack", "1", "--learning-rate", "0.0003", "--batch-size", "512", "--n-steps", "4096", "--n-epochs", "10", "--gamma", "0.99", "--cost-limit", "25.0", "--lagrangian-lr", "0.002", "--eval-freq", "10000", "--eval-episodes", "5", "--device", "auto", "--ent-coef", "0.02", "--max-beta", "10.0" ]
     volumes:
       - .:/app
 
   # Evaluation script
-  evaluate:
+  evaluation:
     build:
       context: .
       dockerfile: Dockerfile
     image: safe-nav-base
-    entrypoint: ["python", "src/evaluation.py"]
-    command: [
-      "--controller", "scripted",
-      "--n-episodes", "20",
-      "--action-alpha", "0.8",
-      "--frame-stack", "1"
-    ]
+    entrypoint: [ "python", "src/evaluation.py" ]
+    command: [ "--controller", "ppo", "--model-path", "runs/ppo_model/best_model.zip", "--obs-stats-path", "runs/ppo_model/obs_stats.npz", "--n-episodes", "20", "--smooth-actions", "--action-alpha", "0.8", "--frame-stack", "3" ]
     volumes:
       - .:/app
 
