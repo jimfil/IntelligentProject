@@ -55,7 +55,7 @@ def overlay_info(frame, step, reward, cost, seed, status_text, camera_name):
     except Exception:
         font = ImageFont.load_default()
         
-    text_line1 = f"Seed: {seed} | Step: {step} | POV: {camera_name.upper()} View | Controller: PPO-Lagrangian"
+    text_line1 = f"Seed: {seed} | Step: {step} | POV: {camera_name.upper()} View | Controller: Simple PPO"
     text_line2 = f"Cumulative Reward: {reward:.3f} | Cost: {cost:.1f} ({status_text})"
     
     # Use appropriate color encoding
