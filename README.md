@@ -8,7 +8,6 @@
 
 ## Project Structure
 
-```
 project1_safe_nav/
 ├── src/
 │   ├── environment_setup.py   # env factory, wrappers (obs norm, action smooth, frame stack)
@@ -29,13 +28,13 @@ This project is containerized using Docker and Docker Compose, allowing you to t
 
 ### 1. Build the Containers
 ```bash
-docker compose build
+docker-compose build
 ```
 
 ### 2. Monitor with TensorBoard
 Start the TensorBoard service. It runs in the background and exposes port `6006`:
 ```bash
-docker compose up tensorboard
+docker-compose up tensorboard
 ```
 Open your browser and navigate to: http://localhost:6006
 

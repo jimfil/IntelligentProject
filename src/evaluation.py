@@ -426,7 +426,7 @@ if __name__ == "__main__":
     from controllers import SACController, ScriptedController, ToController
 
     parser = argparse.ArgumentParser(description="Evaluate a controller on SafetyRacecarButton2-v0")
-    parser.add_argument("--controller", type=str, default="sac", choices=["sac", "scripted", "ppo_lagrangian"])
+    parser.add_argument("--controller", type=str, default="sac", choices=["sac", "scripted", "ppo"])
     parser.add_argument("--model-path", type=str, default=None)
     parser.add_argument("--obs-stats-path", type=str, default=None)
     parser.add_argument("--n-episodes", type=int, default=20)
@@ -442,8 +442,8 @@ if __name__ == "__main__":
 
     # Step 1: Load the selected controller
     if args.controller == "sac":
-        model_path = args.model_path or os.path.join(project_root, "runs/sac_baseline/best_model.zip")
-        obs_stats_path = args.obs_stats_path or os.path.join(project_root, "runs/sac_baseline/obs_stats.npz")
+        model_path = args.model_path or os.path.join(project_root, "runs/sac/best_model.zip")
+        obs_stats_path = args.obs_stats_path or os.path.join(project_root, "runs/sac/obs_stats.npz")
         if not os.path.exists(model_path):
             print(f"[Error] Model checkpoint not found at: {model_path}")
             exit(1)
@@ -451,9 +451,9 @@ if __name__ == "__main__":
         ctrl = SACController(model_path)
         controller_name = f"SAC ({os.path.basename(model_path)})"
         normalize_obs = True
-    elif args.controller == "ppo_lagrangian":
-        model_path = args.model_path or os.path.join(project_root, "runs/ppo_lagrangian/best_model.zip")
-        obs_stats_path = args.obs_stats_path or os.path.join(project_root, "runs/ppo_lagrangian/obs_stats.npz")
+    elif args.controller == "ppo":
+        model_path = args.model_path or os.path.join(project_root, "runs/ppo_model/best_model.zip")
+        obs_stats_path = args.obs_stats_path or os.path.join(project_root, "runs/ppo_model/obs_stats.npz")
         if not os.path.exists(model_path):
             print(f"[Error] Model checkpoint not found at: {model_path}")
             exit(1)
