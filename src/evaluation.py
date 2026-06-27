@@ -423,10 +423,10 @@ def generate_and_save_stats(save_path: str, num_steps: int = 10000, controller =
 
 if __name__ == "__main__":
     import argparse
-    from controllers import SACController, ScriptedController, ToController
+    from controllers import ScriptedController, PPOController
 
     parser = argparse.ArgumentParser(description="Evaluate a controller on SafetyRacecarButton2-v0")
-    parser.add_argument("--controller", type=str, default="sac", choices=["sac", "scripted", "ppo"])
+    parser.add_argument("--controller", type=str, default="ppo", choices=["scripted", "ppo"])
     parser.add_argument("--model-path", type=str, default=None)
     parser.add_argument("--obs-stats-path", type=str, default=None)
     parser.add_argument("--n-episodes", type=int, default=20)
@@ -441,25 +441,15 @@ if __name__ == "__main__":
     project_root = os.path.dirname(script_dir) if os.path.basename(script_dir) == "src" else script_dir
 
     # Step 1: Load the selected controller
-    if args.controller == "sac":
-        model_path = args.model_path or os.path.join(project_root, "runs/sac/best_model.zip")
-        obs_stats_path = args.obs_stats_path or os.path.join(project_root, "runs/sac/obs_stats.npz")
-        if not os.path.exists(model_path):
-            print(f"[Error] Model checkpoint not found at: {model_path}")
-            exit(1)
-        print(f"Loading SACController from {model_path}...")
-        ctrl = SACController(model_path)
-        controller_name = f"SAC ({os.path.basename(model_path)})"
-        normalize_obs = True
-    elif args.controller == "ppo":
+    if args.controller == "ppo":
         model_path = args.model_path or os.path.join(project_root, "runs/ppo_model/best_model.zip")
         obs_stats_path = args.obs_stats_path or os.path.join(project_root, "runs/ppo_model/obs_stats.npz")
         if not os.path.exists(model_path):
             print(f"[Error] Model checkpoint not found at: {model_path}")
             exit(1)
-        print(f"Loading ToController from {model_path}...")
-        ctrl = ToController(model_path)
-        controller_name = f"ToController ({os.path.basename(model_path)})"
+        print(f"Loading PPOController from {model_path}...")
+        ctrl = PPOController(model_path)
+        controller_name = f"PPOController ({os.path.basename(model_path)})"
         normalize_obs = True
     else:
         ctrl = ScriptedController()
