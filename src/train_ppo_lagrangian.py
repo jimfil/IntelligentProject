@@ -54,12 +54,12 @@ class SafetyToGymnasiumWrapper(gym.Wrapper):
     def step(self, action):
         obs, reward, cost, terminated, truncated, info = self.env.step(action)
 
-        #quadratic smoothing penalty
-        action_diff = np.abs(action - self.prev_action)
-        squared_diff = np.sum(action_diff ** 2) 
-        smoothness_penalty = 0.01 * float(squared_diff)
-        reward -= smoothness_penalty
-        self.prev_action = action.copy()
+        # #quadratic smoothing penalty
+        # action_diff = np.abs(action - self.prev_action)
+        # squared_diff = np.sum(action_diff ** 2) 
+        # smoothness_penalty = 0.01 * float(squared_diff)
+        # reward -= smoothness_penalty
+        # self.prev_action = action.copy()
         
         self.episode_cost += float(cost)
         self.episode_reward += float(reward)
@@ -93,16 +93,16 @@ class CostLoggingCallback(BaseCallback):
     def _on_step(self) -> bool:
         infos = self.locals.get("infos", [])
         for info in infos:
-            ep = info.get("episode")
-            if ep is not None:
-                if "c" in ep:
-                    self.episode_costs.append(float(ep["c"]))
-                    self.logger.record("rollout/ep_cost", float(ep["c"]))
-                if "r" in ep:
-                    self.episode_rewards.append(float(ep["r"]))
-                    self.logger.record("rollout/ep_shaped_reward", float(ep["r"]))
-                if "l" in ep:
-                    self.episode_lengths.append(int(ep["l"]))
+            if "episode" in info:
+                cost = float(info.get("episode_cost", 0.0))
+                reward = float(info.get("episode_reward", 0.0))
+                length = int(info.get("episode_length", info["episode"]["l"]))
+                
+                self.episode_costs.append(cost)
+                self.logger.record("rollout/ep_cost", cost)
+                self.episode_rewards.append(reward)
+                self.logger.record("rollout/ep_shaped_reward", reward)
+                self.episode_lengths.append(length)
 
         if self.episode_costs:
             self.logger.record(
@@ -141,10 +141,9 @@ class LagrangianCallback(BaseCallback):
     def _on_step(self) -> bool:
         infos = self.locals.get("infos", [])
         for info in infos:
-            ep = info.get("episode")
-            if ep is not None:
-                if "c" in ep:
-                    self.episode_costs.append(float(ep["c"]))
+            if "episode" in info:
+                cost = float(info.get("episode_cost", 0.0))
+                self.episode_costs.append(cost)
         return True
 
     def _on_rollout_end(self) -> None:
