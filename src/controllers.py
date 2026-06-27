@@ -216,35 +216,8 @@ class ScriptedController(Controller):
         return action, info
 
 
-class SACController(Controller):
-    """
-    Inference-time wrapper for a trained Stable-Baselines3 SAC policy.
 
-    This controller does NOT train SAC. It only loads a previously trained
-    model from disk and uses it to produce actions during evaluation.
-    """
-
-    def __init__(self, model_path: str):
-        from stable_baselines3 import SAC
-        self.model_path = model_path
-        self.model = SAC.load(model_path)
-
-    def reset(self, seed=None):
-        pass
-
-    def act(self, observation: np.ndarray):
-        obs = np.asarray(observation, dtype=np.float32)
-        action, _ = self.model.predict(obs, deterministic=True)
-        action = np.asarray(action, dtype=np.float32)
-
-        info = {
-            "policy": "sac",
-            "model_path": self.model_path,
-        }
-        return action, info
-
-
-class ToController(Controller):
+class PPOController(Controller):
     """
     Inference-time wrapper for a trained Stable-Baselines3 PPO policy.
     """

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import gymnasium as gym
 import numpy as np
-from stable_baselines3 import SAC
+from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback, CallbackList, EvalCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -15,15 +15,7 @@ from environment_setup import make_env
 class SafetyToGymnasiumWrapper(gym.Wrapper):
     """
     Adapts Safety-Gymnasium's 6-tuple step output to the 5-tuple API expected by SB3.
-
-    Original:
-        obs, reward, cost, terminated, truncated, info
-
-    Wrapped:
-        obs, reward, terminated, truncated, info
-
-    The cost is preserved in info["cost"] and cumulative episode cost is tracked
-    in info["episode_cost"]. This does NOT modify the environment's reward/cost.
+    Tracks episode return and cost but does NOT modify them.
     """
 
     def __init__(self, env: gym.Env):
@@ -72,22 +64,75 @@ class CostLoggingCallback(BaseCallback):
     def _on_step(self) -> bool:
         infos = self.locals.get("infos", [])
         for info in infos:
-            ep = info.get("episode")
-            if ep is not None:
-                if "c" in ep:
-                    self.episode_costs.append(float(ep["c"]))
-                    self.logger.record("rollout/ep_cost", float(ep["c"]))
-                if "r" in ep:
-                    self.episode_rewards.append(float(ep["r"]))
-                if "l" in ep:
-                    self.episode_lengths.append(int(ep["l"]))
+            if "episode" in info:  # Episode ended (signaled by Monitor)
+                cost = float(info.get("episode_cost", 0.0))
+                reward = float(info.get("episode_reward", 0.0))
+                length = int(info.get("episode_length", info["episode"]["l"]))
+                
+                self.episode_costs.append(cost)
+                self.logger.record("rollout/ep_cost", cost)
+                self.episode_rewards.append(reward)
+                self.logger.record("rollout/ep_shaped_reward", reward)
+                self.episode_lengths.append(length)
 
         if self.episode_costs:
             self.logger.record(
                 "rollout/ep_cost_mean_100",
                 float(np.mean(self.episode_costs[-100:])),
             )
+        if self.episode_rewards:
+            self.logger.record(
+                "rollout/ep_shaped_reward_mean_100",
+                float(np.mean(self.episode_rewards[-100:])),
+            )
         return True
+
+
+class StatsSyncEvalCallback(EvalCallback):
+    """
+    EvalCallback that synchronizes observation normalization stats
+    from the training environment to the evaluation environment before running evaluation.
+    """
+    def __init__(self, train_env, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.train_env = train_env
+
+    def _on_step(self) -> bool:
+        if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
+            try:
+                # Find ObsNormWrapper in train_env
+                train_wrapper = None
+                current_env = self.train_env.envs[0]
+                while hasattr(current_env, "env"):
+                    from environment_setup import ObsNormWrapper
+                    if isinstance(current_env, ObsNormWrapper):
+                        train_wrapper = current_env
+                        break
+                    current_env = current_env.env
+                if isinstance(current_env, ObsNormWrapper):
+                    train_wrapper = current_env
+
+                # Find ObsNormWrapper in eval_env
+                eval_wrapper = None
+                current_env = self.eval_env.envs[0]
+                while hasattr(current_env, "env"):
+                    from environment_setup import ObsNormWrapper
+                    if isinstance(current_env, ObsNormWrapper):
+                        eval_wrapper = current_env
+                        break
+                    current_env = current_env.env
+                if isinstance(current_env, ObsNormWrapper):
+                    eval_wrapper = current_env
+
+                if train_wrapper is not None and eval_wrapper is not None:
+                    eval_wrapper.rms.mean = train_wrapper.rms.mean.copy()
+                    eval_wrapper.rms.var = train_wrapper.rms.var.copy()
+                    eval_wrapper.rms.count = train_wrapper.rms.count
+                    if self.verbose > 0:
+                        print("[Evaluation Stats Sync] Synchronized normalization stats to eval_env.")
+            except Exception as e:
+                print(f"[Warning] Failed to synchronize normalizer stats: {e}")
+        return super()._on_step()
 
 
 def build_env(
@@ -134,41 +179,30 @@ def make_vec_env(
     ])
 
 
-class FrozenStatsEvalCallback(EvalCallback):
-    """
-    Eval callback that optionally copies obs-normalization stats from train env to eval env.
-    """
-
-    def _on_step(self) -> bool:
-        return super()._on_step()
-
-
 def main():
-    parser = argparse.ArgumentParser(description="Train SAC baseline on SafetyRacecarButton2-v0")
+    parser = argparse.ArgumentParser(description="Train standard unconstrained PPO on SafetyRacecarButton2-v0")
     parser.add_argument("--total-timesteps", type=int, default=300_000)
     parser.add_argument("--seed", type=int, default=0)
     
     # Resolve the project root directory (parent of src)
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(script_dir) if os.path.basename(script_dir) == "src" else script_dir
-    default_log_dir = os.path.join(project_root, "runs", "sac_baseline")
+    default_log_dir = os.path.join(project_root, "runs", "ppo_unconstrained")
     
     parser.add_argument("--log-dir", type=str, default=default_log_dir)
-    parser.add_argument("--normalize-obs", action="store_true")
-    parser.add_argument("--smooth-actions", action="store_true")
+    parser.add_argument("--normalize-obs", action="store_true", default=True)
+    parser.add_argument("--smooth-actions", action="store_true", default=True)
     parser.add_argument("--action-alpha", type=float, default=0.8)
     parser.add_argument("--frame-stack", type=int, default=1)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
-    parser.add_argument("--buffer-size", type=int, default=200_000)
-    parser.add_argument("--batch-size", type=int, default=256)
-    parser.add_argument("--learning-starts", type=int, default=5_000)
+    parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--n-steps", type=int, default=2048)
+    parser.add_argument("--n-epochs", type=int, default=10)
     parser.add_argument("--gamma", type=float, default=0.99)
-    parser.add_argument("--tau", type=float, default=0.005)
-    parser.add_argument("--train-freq", type=int, default=1)
-    parser.add_argument("--gradient-steps", type=int, default=1)
     parser.add_argument("--eval-freq", type=int, default=10_000)
     parser.add_argument("--eval-episodes", type=int, default=5)
     parser.add_argument("--device", type=str, default="auto")
+    parser.add_argument("--ent-coef", type=float, default=0.0, help="Entropy coefficient for PPO")
     args = parser.parse_args()
 
     os.makedirs(args.log_dir, exist_ok=True)
@@ -191,27 +225,26 @@ def main():
         update_obs_stats=False,
     )
 
-    model = SAC(
+    model = PPO(
         policy="MlpPolicy",
         env=train_env,
         learning_rate=args.learning_rate,
-        buffer_size=args.buffer_size,
-        learning_starts=args.learning_starts,
+        n_steps=args.n_steps,
         batch_size=args.batch_size,
-        tau=args.tau,
+        n_epochs=args.n_epochs,
         gamma=args.gamma,
-        train_freq=args.train_freq,
-        gradient_steps=args.gradient_steps,
         verbose=1,
         tensorboard_log=args.log_dir,
         seed=args.seed,
         device=args.device,
+        ent_coef=args.ent_coef,
     )
 
     callbacks = CallbackList([
         CostLoggingCallback(),
-        EvalCallback(
-            eval_env,
+        StatsSyncEvalCallback(
+            train_env=train_env,
+            eval_env=eval_env,
             best_model_save_path=args.log_dir,
             log_path=args.log_dir,
             eval_freq=args.eval_freq,

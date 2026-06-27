@@ -39,28 +39,28 @@ docker-compose up tensorboard
 Open your browser and navigate to: http://localhost:6006
 
 ### 3. Train Agents
-*   **Soft Actor-Critic (SAC) Baseline**:
+*   **Unconstrained PPO Baseline**:
     ```bash
-    docker compose run --rm train-sac
+    docker compose run --rm train-ppo-unconstrained
     ```
-*   **PPO-Lagrangian Safety Policy**:
+*   **Safe PPO Safety Policy**:
     ```bash
-    docker compose run --rm train-ppo-lagrangian
+    docker compose run --rm train-safe-ppo
     ```
     *Note: Checkpoints, logs, and stats are saved to the `runs/` directory.*
 
 ### 4. Evaluate Policies
 *   **Default Evaluation (Scripted Controller)**:
     ```bash
-    docker compose run --rm evaluate
+    docker compose run --rm evaluation --controller scripted
     ```
-*   **Evaluate SAC Controller**:
+*   **Evaluate Unconstrained PPO**:
     ```bash
-    docker compose run --rm evaluate python src/evaluation.py --controller sac --n-episodes 20
+    docker compose run --rm evaluation --controller ppo --model-path runs/ppo_unconstrained/best_model.zip --obs-stats-path runs/ppo_unconstrained/obs_stats.npz --n-episodes 20
     ```
-*   **Evaluate PPO-Lagrangian Controller**:
+*   **Evaluate Safe PPO**:
     ```bash
-    docker compose run --rm evaluate python src/evaluation.py --controller ppo_lagrangian --n-episodes 20
+    docker compose run --rm evaluation --controller ppo --model-path runs/ppo_model/best_model.zip --obs-stats-path runs/ppo_model/obs_stats.npz --n-episodes 20
     ```
 
 ### 5. Interactive Debugging / Custom Commands
@@ -107,13 +107,13 @@ pip install -r requirements.txt
 
 ## Training Policies
 
-Train the baseline SAC (Soft Actor-Critic) agent. This model optimizes solely for task rewards, ignoring safety costs. It will write checkpoint logs and observation normalization statistics under `runs/sac_baseline/`.
+Train the baseline unconstrained PPO agent. This model optimizes solely for task rewards, ignoring safety costs. It will write checkpoint logs and observation normalization statistics under `runs/ppo_unconstrained/`.
 
 ```bash
-python src/train_sac.py --normalize-obs --total-timesteps 3000000
+python src/train_ppo.py --normalize-obs --total-timesteps 3000000
 ```
 
-Train the safety-aware PPO-Lagrangian agent. This model dynamically balances task rewards and safety constraints to keep safety costs under the threshold of 25.0. It will save final checkpoints and statistics under `runs/ppo_lagrangian/`.
+Train the safety-aware PPO-Lagrangian agent. This model dynamically balances task rewards and safety constraints to keep safety costs under the threshold of 25.0. It will save final checkpoints and statistics under `runs/ppo_model/`.
 
 ```bash
 python src/train_ppo_lagrangian.py --total-timesteps 3000000
@@ -129,22 +129,22 @@ Evaluate the Scripted Controller baseline. It does not use observation normaliza
 python src/evaluation.py --controller scripted --n-episodes 20
 ```
 
-Evaluate the trained SAC Baseline agent. This will load the best model and corresponding normalization statistics (`obs_stats.npz`) from the `runs/sac_baseline/` folder.
+Evaluate the trained unconstrained PPO Baseline agent. This will load the best model and corresponding normalization statistics (`obs_stats.npz`) from the `runs/ppo_unconstrained/` folder.
 
 ```bash
-python src/evaluation.py --controller sac --n-episodes 20
+python src/evaluation.py --controller ppo --model-path runs/ppo_unconstrained/best_model.zip --obs-stats-path runs/ppo_unconstrained/obs_stats.npz --n-episodes 20
 ```
 
-Evaluate the trained safety-aware PPO-Lagrangian agent. This loads the policy weights and corresponding normalization statistics from `runs/ppo_lagrangian/`.
+Evaluate the trained safety-aware PPO-Lagrangian agent. This loads the policy weights and corresponding normalization statistics from `runs/ppo_model/`.
 
 ```bash
-python src/evaluation.py --controller ppo_lagrangian --n-episodes 20
+python src/evaluation.py --controller ppo --model-path runs/ppo_model/best_model.zip --obs-stats-path runs/ppo_model/obs_stats.npz --n-episodes 20
 ```
 
 Run evaluation with rendering enabled to visualize the racecar's driving behavior, avoidance maneuvers, and interactions with buttons:
 
 ```bash
-python src/evaluation.py --controller ppo_lagrangian --n-episodes 5 --render
+python src/evaluation.py --controller ppo --model-path runs/ppo_model/best_model.zip --obs-stats-path runs/ppo_model/obs_stats.npz --n-episodes 5 --render
 ```
 
 ---
