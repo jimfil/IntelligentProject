@@ -58,32 +58,19 @@ class CostLoggingCallback(BaseCallback):
     def __init__(self, verbose: int = 0):
         super().__init__(verbose)
         self.episode_costs: List[float] = []
-        self.episode_rewards: List[float] = []
-        self.episode_lengths: List[int] = []
 
     def _on_step(self) -> bool:
         infos = self.locals.get("infos", [])
         for info in infos:
             if "episode" in info:  # Episode ended (signaled by Monitor)
                 cost = float(info.get("episode_cost", 0.0))
-                reward = float(info.get("episode_reward", 0.0))
-                length = int(info.get("episode_length", info["episode"]["l"]))
-                
                 self.episode_costs.append(cost)
                 self.logger.record("rollout/ep_cost", cost)
-                self.episode_rewards.append(reward)
-                self.logger.record("rollout/ep_shaped_reward", reward)
-                self.episode_lengths.append(length)
 
         if self.episode_costs:
             self.logger.record(
                 "rollout/ep_cost_mean_100",
                 float(np.mean(self.episode_costs[-100:])),
-            )
-        if self.episode_rewards:
-            self.logger.record(
-                "rollout/ep_shaped_reward_mean_100",
-                float(np.mean(self.episode_rewards[-100:])),
             )
         return True
 
