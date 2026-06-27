@@ -174,8 +174,7 @@ class FrameStackWrapper(gymnasium.ObservationWrapper):
     """
     Stacks the last `n_frames` observations along the last axis.
 
-    ALLOWED by the benchmark rules: frame stacking.
-    Useful for giving the controller a short history of sensor readings.
+    Gives the controller a short history of sensor readings.
     """
 
     def __init__(self, env, n_frames: int = 4):
@@ -225,7 +224,6 @@ class CostTrackingWrapper(gymnasium.Wrapper):
         obs, reward, cost, terminated, truncated, info
 
     This wrapper stores the cost in info and accumulates it for logging.
-    The cost is NOT modified — benchmark rules forbid that.
     """
 
     def __init__(self, env):

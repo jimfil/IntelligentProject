@@ -12,8 +12,7 @@ project1_safe_nav/
 ├── src/
 │   ├── environment_setup.py   # env factory, wrappers (obs norm, action smooth, frame stack)
 │   ├── evaluation.py          # evaluation loop, metrics, comparison table
-│   ├── controllers.py         # Controller interface + team stub (FILL IN)
-│   └── utils.py               # logging, video recording, seeds
+│   └── controllers.py         # Controller interface + team stub (FILL IN)
 ├── requirements.txt       # dependencies
 ├── README.md
 └── README_DOCKER.md
