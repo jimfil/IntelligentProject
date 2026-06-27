@@ -58,6 +58,14 @@
 	\end{itemize}
 	
 	Για τη σταθεροποίηση και τη βελτίωση της εκπαίδευσης των νευρωνικών δικτύων, εφαρμόστηκαν κατάλληλοι μετασχηματιστές στο περιβάλλον, όπως για την κανονικοποίηση των παρατηρήσεων, την εξομάλυνση των ενεργειών του αυτοκινήτου για την αποφυγή απότομων αλλαγών πορείας, και το frame stacking για την αντίληψη της χρονικής εξέλιξης της κίνησης.
+
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.8\linewidth]{safety_gymnasium.png}
+		\caption{Περιβάλλον Safety Gymnasium}
+		\label{fig:safety_gymnasium}
+	\end{figure}
+
 	\section{Αρχιτεκτονική και Υλοποίηση Λογισμικού}
 	Σε αυτή την ενότητα περιγράφεται η δομή και η αρχιτεκτονική του υλοποιημένου λογισμικού, αναλύοντας πώς συνδέονται τα επιμέρους στοιχεία (δημιουργία περιβάλλοντος, μετασχηματιστές, εκπαίδευση και αξιολόγηση) για την επίλυση του προβλήματος constrained RL.
 
@@ -155,6 +163,20 @@
 		\item \textbf{Πρόβλημα Κόστους:} Το μέσο κόστος ασφάλειας είναι εξαιρετικά υψηλό ($202.80$). Το ποσοστό των ασφαλών επεισοδίων είναι μόλις $30.0\%$, ενώ σε ορισμένες περιπτώσεις, το συσσωρευμένο κόστος αγγίζει πολύ υψηλές τιμές.
 		\item \textbf{Τοπικά Ελάχιστα:} Σε περιοχές με υψηλή πυκνότητα εμποδίων ή κοντά σε εμπόδια (gremlins/hazards), ο ελεγκτής μπορεί να παρουσιάσει ταλαντώσεις στην κατεύθυνση τιμονιού, με αποτέλεσμα να παγιδεύεται και να συγκρούεται συνεχόμενα με το ίδιο εμπόδιο.
 	\end{itemize}
+
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.7\linewidth]{scripted_success.jpg}
+		\caption{Παράδειγμα επιτυχούς πλοήγησης (Success Seed Case) του Scripted Controller (Seed 1).}
+		\label{fig:scripted_success}
+	\end{figure}
+
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.7\linewidth]{scripted_failure.jpg}
+		\caption{Παράδειγμα αποτυχίας πλοήγησης (Failure Seed Case) του Scripted Controller (Seed 9).}
+		\label{fig:scripted_failure}
+	\end{figure}
 	
 	\section{Simple PPO (Reward-only Baseline)}
 	Για μια πρώτη προσέγγιση του προβλήματος βασιστήκαμε στον αλγόριθμο \textbf{Proximal Policy Optimization (PPO)}. Ο PPO είναι ένας on-policy αλγόριθμος που λειτουργεί σε συνεχή χώρο ενεργειών και χρησιμοποιεί μια τροποποιημένη συνάρτηση στόχου με περιορισμό (clipping) για να αποτρέψει τις μεγάλες και αποσταθεροποιητικές αλλαγές στην πολιτική.
@@ -227,6 +249,20 @@
 		\label{tab:ppo_unconstrained_results}
 	\end{table}
 
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.7\linewidth]{ppo_simple_success.jpg}
+		\caption{Παράδειγμα επιτυχούς πλοήγησης (Success Seed Case) του Simple PPO (Seed 0).}
+		\label{fig:ppo_simple_success}
+	\end{figure}
+
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.7\linewidth]{ppo_simple_failure.jpg}
+		\caption{Παράδειγμα αποτυχίας πλοήγησης (Failure Seed Case) του Simple PPO (Seed 9).}
+		\label{fig:ppo_simple_failure}
+	\end{figure}
+	
 	\section{Safe Proximal Policy Optimization}
 	Για την επίλυση του προβλήματος της ασφάλειας, σχεδιάστηκε και υλοποιήθηκε μια προσέγγιση \textbf{Constrained Reinforcement Learning} βασισμένη στον αλγόριθμο Proximal Policy Optimization με χρήση πολλαπλασιαστών Lagrange (\textbf{PPO-Lagrangian}).
 
