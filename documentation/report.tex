@@ -124,46 +124,45 @@
 		\item \textbf{Αρχιτεκτονική Δικτύου:} Χρησιμοποιήθηκε μια MlpPolicy με δύο κρυφά επίπεδα των 256 νευρώνων το καθένα για την πολιτική (actor) και την αξία (critic).
 	\end{itemize}
 
-	Οι βασικές υπερπαράμετροι (hyperparameters) της εκπαίδευσης παρουσιάζονται στον Πίνακα~\ref{tab:sac_hyperparams}.
+	Οι βασικές υπερπαράμετροι (hyperparameters) της εκπαίδευσης παρουσιάζονται στον Πίνακα~\ref{tab:ppo_unconstrained_hyperparams}.
 
 	\begin{table}[H]
 		\centering
 		\caption{Υπερπαράμετροι Εκπαίδευσης του Simple PPO}
-		\label{tab:sac_hyperparams}
+		\label{tab:ppo_unconstrained_hyperparams}
 		\begin{tabular}{lc}
 			\toprule
 			\textbf{Υπερπαράμετρος} & \textbf{Τιμή} \\
 			\midrule
-			Συνολικά Βήματα Εκπαίδευσης (Total Timesteps) & 3.000.000 \\
-			Ρυθμός Μάθησης (Learning Rate) & $3 \times 10^{-4}$ \\
-			Μήκος Rollout (N Steps) & 4096 \\
-			Μέγεθος Replay Buffer (Buffer Size) & 200.000 \\
-			Μέγεθος Batch (Batch Size) & 512 \\
-			Αριθμός Epochs (N Epochs) & 10 \\
-			Συντελεστής Έκπτωσης ($\gamma$) & 0.99 \\
+			Συνολικά Βήματα Εκπαίδευσης & 3.000.000 \\
+			Ρυθμός Μάθησης & $3 \times 10^{-4}$ \\
+			Batch Size & 512 \\
+			N Steps & 4096 \\
+			Αριθμός Εποχών & 10 \\
+			Συντελεστής $\gamma$ & 0.99 \\
 			Παράμετρος Αποκοπής ($\epsilon$) & 0.2 \\
-			Συντελεστής Εντροπίας (Entropy Coefficient) & 0.02 \\
+			Συντελεστής Εντροπίας & 0.02 \\
 			\bottomrule
 		\end{tabular}
 	\end{table}
 
 	\subsection{Αποτελέσματα}
-	Τα αποτελέσματα της αξιολόγησης του εκπαιδευμένου Simple PPO μοντέλου για 20 επεισόδια παρουσιάζονται στον Πίνακα~\ref{tab:sac_results}.
+	Τα αποτελέσματα της αξιολόγησης του εκπαιδευμένου Simple PPO μοντέλου για 20 επεισόδια παρουσιάζονται στον Πίνακα~\ref{tab:ppo_unconstrained_results}.
 
 	\begin{table}[H]
 		\centering
 		\caption{Αποτελέσματα Αξιολόγησης του Simple PPO Controller}
-		\label{tab:sac_results}
+		\label{tab:ppo_unconstrained_results}
 		\begin{tabular}{lc}
 			\toprule
 			\textbf{Μετρική} & \textbf{Τιμή / Επίδοση} \\
 			\midrule
 			Αριθμός Επεισοδίων & 20 \\
-			Μέση Ανταμοιβή (Mean Reward) & $+2.8220 \pm 2.3994$ \\
+			Μέση Ανταμοιβή & $+2.8220 \pm 2.3994$ \\
 			Ελάχιστη / Μέγιστη Ανταμοιβή & $[-0.0631, +9.5873]$ \\
-			Μέσο Κόστος Ασφάλειας (Mean Cost) & $170.85 \pm 205.60$ \\
-			Μέγιστο Κόστος Επεισοδίου (Max Cost) & $607.00$ \\
-			Ποσοστό Επεισοδίων με Μηδενικό Κόστος (Zero-Cost Rate) & $15.0\%$ ($3/20$) \\
+			Μέσο Κόστος Ασφάλειας  & $170.85 \pm 205.60$ \\
+			Μέγιστο Κόστος  & $607.00$ \\
+			Ποσοστό Επεισοδίων με Μηδενικό Κόστος & $15.0\%$ ($3/20$) \\
 			Ποσοστό Ασφαλών Επεισοδίων ($Cost \le 25.0$) & $30.0\%$ ($6/20$) \\
 			Μέσο Μήκος Επεισοδίου & $1000.0$ βήματα \\
 			Συνδυασμένο Σκορ ($R - 1.0 \times C$) & $-168.0280$ \\
@@ -202,28 +201,28 @@
 		\item \textbf{\texttt{StatsSyncEvalCallback}:} Διασφαλίζει ότι οι online στατιστικές κανονικοποίησης (mean/std) του εκπαιδευόμενου wrapper μεταφέρονται αυτούσιες στο περιβάλλον αξιολόγησης (evaluation environment) κατά τη διάρκεια των ενδιάμεσων ελέγχων, ώστε να μην διαταράσσεται η συμπεριφορά του ελεγκτή.
 	\end{itemize}
 
-	Οι βασικές υπερπαράμετροι εκπαίδευσης του PPO-Lagrangian παρουσιάζονται στον Πίνακα~\ref{tab:ppo_hyperparams}.
+	Οι βασικές υπερπαράμετροι εκπαίδευσης του PPO-Lagrangian παρουσιάζονται στον Πίνακα~\ref{tab:ppo_lagrangian_hyperparams}.
 
 	\begin{table}[H]
 		\centering
-		\caption{Υπερπαράμετροι Εκπαίδευσης του PPO-Lagrangian}
-		\label{tab:ppo_hyperparams}
 		\begin{tabular}{lc}
 			\toprule
 			\textbf{Υπερπαράμετρος} & \textbf{Τιμή} \\
 			\midrule
 			Συνολικά Βήματα Εκπαίδευσης & 3.000.000 \\
-			Ρυθμός Μάθησης ($\alpha$) & $3 \times 10^{-4}$ \\
-			Μέγεθος Batch (Batch Size) & 64 \\
-			Μήκος Rollout (N Steps) & 2048 \\
-			Αριθμός Epochs (N Epochs) & 10 \\
-			Συντελεστής Έκπτωσης ($\gamma$) & 0.99 \\
+			Ρυθμός Μάθησης & $3 \times 10^{-4}$ \\
+			Batch Size & 64 \\
+			N Steps & 2048 \\
+			Αριθμός Εποχών &10 \\
+			Συντελεστής $\gamma$ & 0.99 \\
 			Όριο Κόστους ($C_{\text{limit}}$) & 25.0 \\
 			Ρυθμός Μάθησης Lagrange ($\eta$) & 0.02 \\
 			Μέγιστη Τιμή Πολλαπλασιαστή ($\beta_{\text{max}}$) & 10.0 \\
-			Συντελεστής Εντροπίας (Entropy Coefficient) & 0.0 \\
+			Συντελεστής Εντροπίας & 0.0 \\
 			\bottomrule
 		\end{tabular}
+		\caption{Υπερπαράμετροι Εκπαίδευσης του PPO-Lagrangian}
+		\label{tab:ppo_lagrangian_hyperparams}
 	\end{table}
 
 	\subsection{Ανάλυση Επιμέρους Στοιχείων (Ablation Studies)}
@@ -235,27 +234,27 @@
 	\end{itemize}
 
 	\subsection{Αποτελέσματα}
-	Τα αποτελέσματα της αξιολόγησης του εκπαιδευμένου PPO-Lagrangian μοντέλου για 20 επεισόδια παρουσιάζονται στον Πίνακα~\ref{tab:ppo_results} (τα δεδομένα θα συμπληρωθούν μετά την ολοκλήρωση της εκπαίδευσης).
+	Τα αποτελέσματα της αξιολόγησης του εκπαιδευμένου PPO-Lagrangian μοντέλου για 20 επεισόδια παρουσιάζονται στον Πίνακα~\ref{tab:ppo_lagrangian_results} (τα δεδομένα θα συμπληρωθούν μετά την ολοκλήρωση της εκπαίδευσης).
 
 	\begin{table}[H]
 		\centering
-		\caption{Αποτελέσματα Αξιολόγησης του PPO-Lagrangian Controller}
-		\label{tab:ppo_results}
 		\begin{tabular}{lc}
 			\toprule
 			\textbf{Μετρική} & \textbf{Τιμή / Επίδοση} \\
 			\midrule
 			Αριθμός Επεισοδίων & 20 \\
-			Μέση Ανταμοιβή (Mean Reward) & \textit{[Υπό Εκπαίδευση]} \\
+			Μέση Ανταμοιβή  & \textit{[Υπό Εκπαίδευση]} \\
 			Ελάχιστη / Μέγιστη Ανταμοιβή & \textit{[Υπό Εκπαίδευση]} \\
-			Μέσο Κόστος Ασφάλειας (Mean Cost) & \textit{[Υπό Εκπαίδευση]} \\
-			Μέγιστο Κόστος Επεισοδίου (Max Cost) & \textit{[Υπό Εκπαίδευση]} \\
+			Μέσο Κόστος Ασφάλειας & \textit{[Υπό Εκπαίδευση]} \\
+			Μέγιστο Κόστος Επεισοδίου & \textit{[Υπό Εκπαίδευση]} \\
 			Ποσοστό Επεισοδίων με Μηδενικό Κόστος & \textit{[Υπό Εκπαίδευση]} \\
 			Ποσοστό Ασφαλών Επεισοδίων ($Cost \le 25.0$) & \textit{[Υπό Εκπαίδευση]} \\
 			Μέσο Μήκος Επεισοδίου & \textit{[Υπό Εκπαίδευση]} \\
 			Συνδυασμένο Σκορ ($R - 1.0 \times C$) & \textit{[Υπό Εκπαίδευση]} \\
 			\bottomrule
 		\end{tabular}
+		\caption{Αποτελέσματα Αξιολόγησης του PPO-Lagrangian Controller}
+		\label{tab:ppo_lagrangian_results}
 	\end{table}
 
 	\section{Συμπεράσματα}
