@@ -54,12 +54,6 @@ class SafetyToGymnasiumWrapper(gym.Wrapper):
     def step(self, action):
         obs, reward, cost, terminated, truncated, info = self.env.step(action)
 
-        # #quadratic smoothing penalty
-        # action_diff = np.abs(action - self.prev_action)
-        # squared_diff = np.sum(action_diff ** 2) 
-        # smoothness_penalty = 0.01 * float(squared_diff)
-        # reward -= smoothness_penalty
-        # self.prev_action = action.copy()
         
         self.episode_cost += float(cost)
         self.episode_reward += float(reward)
