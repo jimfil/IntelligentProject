@@ -243,31 +243,31 @@ def make_vec_env(
 
 def main():
     parser = argparse.ArgumentParser(description="Train PPO-Lagrangian on SafetyRacecarButton2-v0")
-    parser.add_argument("--total-timesteps", type=int, default=300_000)
+    parser.add_argument("--total-timesteps", type=int, default=3000000)
     parser.add_argument("--seed", type=int, default=0)
     
     # Resolve the project root directory (parent of src)
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(script_dir) if os.path.basename(script_dir) == "src" else script_dir
-    default_log_dir = os.path.join(project_root, "runs", "ppo_lagrangian")
+    default_log_dir = os.path.join(project_root, "runs", "ppo_model")
     
     parser.add_argument("--log-dir", type=str, default=default_log_dir)
     parser.add_argument("--normalize-obs", action="store_true", default=True)
     parser.add_argument("--smooth-actions", action="store_true", default=True)
     parser.add_argument("--action-alpha", type=float, default=0.8)
     parser.add_argument("--frame-stack", type=int, default=1)
-    parser.add_argument("--learning-rate", type=float, default=3e-4)
+    parser.add_argument("--learning-rate", type=float, default=0.0001)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--n-steps", type=int, default=2048)
     parser.add_argument("--n-epochs", type=int, default=10)
     parser.add_argument("--gamma", type=float, default=0.99)
-    parser.add_argument("--cost-limit", type=float, default=25.0)
-    parser.add_argument("--lagrangian-lr", type=float, default=0.02)
+    parser.add_argument("--cost-limit", type=float, default=100.0)
+    parser.add_argument("--lagrangian-lr", type=float, default=0.00001)
     parser.add_argument("--eval-freq", type=int, default=10_000)
     parser.add_argument("--eval-episodes", type=int, default=5)
     parser.add_argument("--device", type=str, default="auto")
-    parser.add_argument("--ent-coef", type=float, default=0.0, help="Entropy coefficient for PPO")
-    parser.add_argument("--max-beta", type=float, default=10.0, help="Maximum Lagrangian multiplier")
+    parser.add_argument("--ent-coef", type=float, default=0.01, help="Entropy coefficient for PPO")
+    parser.add_argument("--max-beta", type=float, default=0.004, help="Maximum Lagrangian multiplier")
     args = parser.parse_args()
 
     os.makedirs(args.log_dir, exist_ok=True)

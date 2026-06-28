@@ -168,7 +168,7 @@ def make_vec_env(
 
 def main():
     parser = argparse.ArgumentParser(description="Train standard unconstrained PPO on SafetyRacecarButton2-v0")
-    parser.add_argument("--total-timesteps", type=int, default=300_000)
+    parser.add_argument("--total-timesteps", type=int, default=3000000)
     parser.add_argument("--seed", type=int, default=0)
     
     # Resolve the project root directory (parent of src)
@@ -182,14 +182,14 @@ def main():
     parser.add_argument("--action-alpha", type=float, default=0.8)
     parser.add_argument("--frame-stack", type=int, default=1)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
-    parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--n-steps", type=int, default=2048)
+    parser.add_argument("--batch-size", type=int, default=512)
+    parser.add_argument("--n-steps", type=int, default=4096)
     parser.add_argument("--n-epochs", type=int, default=10)
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--eval-freq", type=int, default=10_000)
     parser.add_argument("--eval-episodes", type=int, default=5)
     parser.add_argument("--device", type=str, default="auto")
-    parser.add_argument("--ent-coef", type=float, default=0.0, help="Entropy coefficient for PPO")
+    parser.add_argument("--ent-coef", type=float, default=0.02, help="Entropy coefficient for PPO")
     args = parser.parse_args()
 
     os.makedirs(args.log_dir, exist_ok=True)
