@@ -4,13 +4,6 @@ Environment setup, wrappers, and observation normalization.
 
 Environment: SafetyRacecarButton2-v0 (Safety-Gymnasium)
 Robot: Racecar - rear-wheel velocity + front-wheel steering control
-
-Rules:
-  - Do NOT modify reward function, cost function, termination logic,
-    random seeds used for official evaluation, or the scoring script.
-  - Allowed: observation normalization, action smoothing, frame stacking,
-    recurrent state, memory buffers, learned representations, demonstrations,
-    model-based planning.
 """
 
 import dataclasses
@@ -95,8 +88,6 @@ class RunningMeanStd:
 class ObsNormWrapper(gymnasium.ObservationWrapper):
     """
     Normalizes observations using a running mean/std.
-
-    ALLOWED by the benchmark rules: observation normalization.
     The running stats are updated only during training (update=True).
     During evaluation pass update=False to freeze the statistics.
     """
@@ -137,8 +128,6 @@ class ObsNormWrapper(gymnasium.ObservationWrapper):
 class ActionSmoothingWrapper(gymnasium.ActionWrapper):
     """
     Applies exponential moving average smoothing to actions.
-
-    ALLOWED by the benchmark rules: action smoothing.
     alpha=1.0 → no smoothing (pass-through).
     alpha→0   → heavy smoothing (slow to change).
     """
@@ -305,7 +294,7 @@ def make_env(
     # Always track costs (does not modify cost values, only logs them)
     env = CostTrackingWrapper(env)
 
-    # Allowed wrappers (benchmark rules permit all of these)
+    # Apply selected wrappers
     if frame_stack > 1:
         env = FrameStackWrapper(env, n_frames=frame_stack)
 

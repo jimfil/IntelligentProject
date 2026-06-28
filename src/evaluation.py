@@ -7,12 +7,6 @@ This module provides:
   - evaluate_policy()   : evaluates a controller over N episodes
   - compute_metrics()   : computes the task-specific scoring metrics
   - print_report()      : human-readable summary
-
-Rules reminder
---------------
-  Teams MUST NOT modify the reward function, cost function, termination
-  logic, random seeds, or scoring script.  This file only READS reward and
-  cost; it never touches the environment internals.
 """
 
 import numpy as np
