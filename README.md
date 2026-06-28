@@ -40,32 +40,32 @@ Open your browser and navigate to: http://localhost:6006
 ### 3. Train Agents
 *   **Unconstrained PPO Baseline**:
     ```bash
-    docker compose run --rm train-ppo-unconstrained
+    docker-compose up train-simple-ppo
     ```
 *   **Safe PPO Safety Policy**:
     ```bash
-    docker compose run --rm train-safe-ppo
+    docker-compose up train-safe-ppo
     ```
     *Note: Checkpoints, logs, and stats are saved to the `runs/` directory.*
 
 ### 4. Evaluate Policies
 *   **Default Evaluation (Scripted Controller)**:
     ```bash
-    docker compose run --rm evaluation --controller scripted
+    docker-compose run --rm evaluation --controller scripted
     ```
 *   **Evaluate Unconstrained PPO**:
     ```bash
-    docker compose run --rm evaluation --controller ppo --model-path runs/ppo_unconstrained/best_model.zip --obs-stats-path runs/ppo_unconstrained/obs_stats.npz --n-episodes 20
+    docker-compose run --rm evaluation --controller ppo --model-path runs/ppo_unconstrained/best_model.zip --obs-stats-path runs/ppo_unconstrained/obs_stats.npz --n-episodes 20
     ```
 *   **Evaluate Safe PPO**:
     ```bash
-    docker compose run --rm evaluation --controller ppo --model-path runs/ppo_model/best_model.zip --obs-stats-path runs/ppo_model/obs_stats.npz --n-episodes 20
+    docker-compose run --rm evaluation --controller ppo --model-path runs/ppo_model/best_model.zip --obs-stats-path runs/ppo_model/obs_stats.npz --n-episodes 20
     ```
 
 ### 5. Interactive Debugging / Custom Commands
 To start an interactive shell inside the container:
 ```bash
-docker compose run --rm shell
+docker-compose run --rm shell
 ```
 
 ---
