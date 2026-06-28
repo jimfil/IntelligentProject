@@ -284,14 +284,14 @@
 	\end{figure}
 	
 	\section{Safe Proximal Policy Optimization}
-	Για την επίλυση του προβλήματος της ασφάλειας, σχεδιάστηκε και υλοποιήθηκε μια προσέγγιση \textbf{Constrained Reinforcement Learning} βασισμένη στον αλγόριθμο Proximal Policy Optimization με χρήση πολλαπλασιαστών Lagrange (\textbf{PPO-Lagrangian}).
+	Για την επίλυση του προβλήματος της ασφάλειας, υλοποιήθηκε μια προσέγγιση \textbf{Constrained Reinforcement Learning} βασισμένη στον PPO αλγόριθμο με χρήση πολλαπλασιαστών Lagrange (\textbf{PPO-Lagrangian}).
 
 	\subsection{Θεωρητικό Υπόβαθρο}
-	Το πρόβλημα της ασφαλούς πλοήγησης μοντελοποιείται ως ένα \textit{Περιορισμένο Μαρκοβιανό Πρόγραμμα Αποφάσεων (Constrained Markov Decision Process - CMDP)}. Στόχος είναι η εύρεση μιας πολιτικής $\pi$ που μεγιστοποιεί την αναμενόμενη ανταμοιβή, ενώ ταυτόχρονα διασφαλίζει ότι το αναμενόμενο κόστος ασφάλειας δεν υπερβαίνει ένα όριο $C_{\text{limit}}$:
+	Το πρόβλημα της ασφαλούς πλοήγησης μοντελοποιείται ως ένα \textit{Περιορισμένο Μαρκοβιανό Πρόγραμμα Αποφάσεων (Constrained Markov Decision Process - CMDP)}. Στόχος είναι να βρούμε μια πολιτική $\pi$ που μεγιστοποιεί την ανταμοιβή, ενώ ταυτόχρονα διασφαλίζει ότι το κόστος ασφάλειας δεν υπερβαίνει ένα όριο $C_{\text{limit}}$:
 	\begin{equation}
 		\max_{\pi} \mathbb{E} \left[ \sum_{t=0}^{T} \gamma^t r_t \right] \quad \text{subject to} \quad \mathbb{E} \left[ \sum_{t=0}^{T} \gamma^t c_t \right] \le C_{\text{limit}}
 	\end{equation}
-	Η μέθοδος των πολλαπλασιαστών Lagrange επιτρέπει τη μετατροπή του περιορισμένου αυτού προβλήματος σε ένα ισοδύναμο μη περιορισμένο πρόβλημα βελτιστοποίησης, εισάγοντας έναν θετικό πολλαπλασιαστή $\beta \ge 0$:
+	Με τους πολλαπλασιαστές Lagrange καταφέρνουμε τη μετατροπή του περιορισμένου αυτού προβλήματος σε ένα ισοδύναμο μη περιορισμένο πρόβλημα βελτιστοποίησης, εισάγοντας έναν θετικό πολλαπλασιαστή $\beta \ge 0$:
 	\begin{equation}
 		\max_{\pi} \min_{\beta \ge 0} \mathcal{L}(\pi, \beta) = J_R(\pi) - \beta (J_C(\pi) - C_{\text{limit}})
 	\end{equation}
