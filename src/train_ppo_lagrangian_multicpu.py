@@ -46,20 +46,15 @@ class SafetyToGymnasiumWrapper(gym.Wrapper):
         self.episode_cost = 0.0
         self.episode_reward = 0.0
         self.episode_length = 0
-
-        self.prev_action = np.zeros(self.env.action_space.shape)
-
         return self.env.reset(**kwargs)
 
     def step(self, action):
         obs, reward, cost, terminated, truncated, info = self.env.step(action)
 
-        
         self.episode_cost += float(cost)
         self.episode_reward += float(reward)
         self.episode_length += 1
 
-       
         info = dict(info)
         info["cost"] = float(cost)
         info["episode_cost"] = self.episode_cost
@@ -107,9 +102,9 @@ class LagrangianCallback(BaseCallback):
     def __init__(
         self,
         beta_holder: List[float],
-        cost_limit: float = 25.0,
-        lr: float = 0.05,
-        max_beta: float = 10.0,
+        cost_limit: float,
+        lr: float,
+        max_beta: float,
         verbose: int = 0,
     ):
         super().__init__(verbose)
@@ -130,14 +125,14 @@ class LagrangianCallback(BaseCallback):
     def _on_rollout_end(self) -> None:
         if len(self.episode_costs) > 0:
             avg_cost = np.mean(self.episode_costs)
-            # Dynamic multiplier update
+            # Dynamic multiplier update with clamp
             new_beta = self.beta_holder[0] + self.lr * (avg_cost - self.cost_limit)
             self.beta_holder[0] = min(max(0.0, new_beta), self.max_beta)
             self.logger.record("train/lagrangian_beta", self.beta_holder[0])
             self.logger.record("train/rollout_cost_mean", avg_cost)
             print(
                 f"\n[Lagrangian] Rollout ended. Avg Cost: {avg_cost:.2f} "
-                f"(Limit: {self.cost_limit}), New Beta: {self.beta_holder[0]:.4f}"
+                f"(Limit: {self.cost_limit}), New Beta: {self.beta_holder[0]:.5f}"
             )
             self.episode_costs.clear()
 
@@ -145,7 +140,7 @@ class LagrangianCallback(BaseCallback):
 class StatsSyncEvalCallback(EvalCallback):
     """
     EvalCallback that synchronizes observation normalization stats
-    from the training environment to the evaluation environment before running evaluation.
+    from the multi-process training environment to the evaluation environment.
     """
     def __init__(self, train_env, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -154,34 +149,27 @@ class StatsSyncEvalCallback(EvalCallback):
     def _on_step(self) -> bool:
         if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
             try:
-                # Find ObsNormWrapper in train_env
-                train_wrapper = None
-                current_env = self.train_env.envs[0]
-                while hasattr(current_env, "env"):
-                    from environment_setup import ObsNormWrapper
-                    if isinstance(current_env, ObsNormWrapper):
-                        train_wrapper = current_env
-                        break
-                    current_env = current_env.env
-                if isinstance(current_env, ObsNormWrapper):
-                    train_wrapper = current_env
+                # Use get_attr to safely pull the 'rms' object across CPU processes
+                train_rms = self.train_env.get_attr("rms", indices=[0])[0]
 
-                # Find ObsNormWrapper in eval_env
+                # Find ObsNormWrapper in eval_env (Since eval_env is DummyVecEnv, envs[0] works)
                 eval_wrapper = None
                 current_env = self.eval_env.envs[0]
+                
                 while hasattr(current_env, "env"):
-                    from environment_setup import ObsNormWrapper
-                    if isinstance(current_env, ObsNormWrapper):
+                    if type(current_env).__name__ == "ObsNormWrapper":
                         eval_wrapper = current_env
                         break
                     current_env = current_env.env
-                if isinstance(current_env, ObsNormWrapper):
+                    
+                if type(current_env).__name__ == "ObsNormWrapper":
                     eval_wrapper = current_env
 
-                if train_wrapper is not None and eval_wrapper is not None:
-                    eval_wrapper.rms.mean = train_wrapper.rms.mean.copy()
-                    eval_wrapper.rms.var = train_wrapper.rms.var.copy()
-                    eval_wrapper.rms.count = train_wrapper.rms.count
+                # Apply the stats
+                if eval_wrapper is not None and train_rms is not None:
+                    eval_wrapper.rms.mean = train_rms.mean.copy()
+                    eval_wrapper.rms.var = train_rms.var.copy()
+                    eval_wrapper.rms.count = train_rms.count
                     if self.verbose > 0:
                         print("[Evaluation Stats Sync] Synchronized normalization stats to eval_env.")
             except Exception as e:
@@ -216,7 +204,7 @@ def build_env(
 
 def make_vec_env(
     seed: int,
-    n_envs: int,  
+    n_envs: int,
     normalize_obs: bool,
     smooth_actions: bool,
     action_alpha: float,
@@ -226,7 +214,7 @@ def make_vec_env(
 ):
     def make_env_fn(rank):
         return lambda: build_env(
-            seed=seed + rank,  
+            seed=seed + rank,
             normalize_obs=normalize_obs,
             smooth_actions=smooth_actions,
             action_alpha=action_alpha,
@@ -238,20 +226,22 @@ def make_vec_env(
     
     env_fns = [make_env_fn(i) for i in range(n_envs)]
     
-    # Use CPU cores for training, but standard Dummy for 1-car evaluation
+    # Run SubprocVecEnv for training (Multi-Core), DummyVecEnv for eval (Single-Core)
     return SubprocVecEnv(env_fns) if n_envs > 1 else DummyVecEnv(env_fns)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Train PPO-Lagrangian on SafetyRacecarButton2-v0")
     parser.add_argument("--total-timesteps", type=int, default=3000000)
     parser.add_argument("--seed", type=int, default=0)
     
-    # Resolve the project root directory (parent of src)
+    # Resolve the project root directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(script_dir) if os.path.basename(script_dir) == "src" else script_dir
     default_log_dir = os.path.join(project_root, "runs", "ppo_model")
     
     parser.add_argument("--log-dir", type=str, default=default_log_dir)
+    parser.add_argument("--n-envs", type=int, default=8, help="Number of parallel CPU processes")
     parser.add_argument("--normalize-obs", action="store_true", default=True)
     parser.add_argument("--smooth-actions", action="store_true", default=True)
     parser.add_argument("--action-alpha", type=float, default=0.8)
@@ -272,12 +262,11 @@ def main():
 
     os.makedirs(args.log_dir, exist_ok=True)
 
-    # List holding beta so it is updated across all environments by callback
     beta_holder = [0.0]
 
     train_env = make_vec_env(
         seed=args.seed,
-        n_envs=6,
+        n_envs=args.n_envs,
         normalize_obs=args.normalize_obs,
         smooth_actions=args.smooth_actions,
         action_alpha=args.action_alpha,
@@ -288,13 +277,13 @@ def main():
 
     eval_env = make_vec_env(
         seed=5000,
-        n_envs=1,
+        n_envs=1, # Keep evaluation strictly to 1 car
         normalize_obs=args.normalize_obs,
         smooth_actions=args.smooth_actions,
         action_alpha=args.action_alpha,
         frame_stack=args.frame_stack,
         update_obs_stats=False,
-        beta_holder=beta_holder,  
+        beta_holder=beta_holder, 
     )
 
     model = PPO(
@@ -312,20 +301,23 @@ def main():
         ent_coef=args.ent_coef,
     )
 
+    # Note: Using max(1, ...) so it scales correctly with multiple environments
+    eval_freq = max(1, args.eval_freq // args.n_envs)
+
     callbacks = CallbackList([
         CostLoggingCallback(),
         LagrangianCallback(
             beta_holder=beta_holder,
             cost_limit=args.cost_limit,
             lr=args.lagrangian_lr,
-            max_beta=args.max_beta,
+            max_beta=args.max_beta
         ),
         StatsSyncEvalCallback(
             train_env=train_env,
             eval_env=eval_env,
             best_model_save_path=args.log_dir,
             log_path=args.log_dir,
-            eval_freq=args.eval_freq,
+            eval_freq=eval_freq,
             n_eval_episodes=args.eval_episodes,
             deterministic=True,
             render=False,
@@ -342,24 +334,14 @@ def main():
     model.save(final_path)
     print(f"Saved final model to {final_path}.zip")
 
-    # Save obs normalizer stats if normalize_obs is True
     if args.normalize_obs:
-        current_env = train_env.envs[0]
-        obs_norm_wrapper = None
-        while hasattr(current_env, "env"):
-            from environment_setup import ObsNormWrapper
-            if isinstance(current_env, ObsNormWrapper):
-                obs_norm_wrapper = current_env
-                break
-            current_env = current_env.env
-        if isinstance(current_env, ObsNormWrapper):
-            obs_norm_wrapper = current_env
-
-        if obs_norm_wrapper is not None:
+        try:
             stats_path = os.path.join(args.log_dir, "obs_stats.npz")
-            obs_norm_wrapper.save_stats(stats_path)
+            # Ask the multi-core engine to safely save the stats from process 0
+            train_env.env_method("save_stats", stats_path, indices=[0])
             print(f"Saved observation normalization stats to {stats_path}")
-
+        except Exception as e:
+            print(f"Failed to save observation stats: {e}")
 
 if __name__ == "__main__":
     main()
