@@ -284,11 +284,11 @@ def main():
     eval_env = make_vec_env(
         seed=5000,
         normalize_obs=args.normalize_obs,
-        smooth_actions=False,
+        smooth_actions=args.smooth_actions,
         action_alpha=args.action_alpha,
         frame_stack=args.frame_stack,
         update_obs_stats=False,
-        beta_holder=[0.0],  # No safety cost penalty during evaluation!
+        beta_holder=beta_holder,  # No safety cost penalty during evaluation!
     )
 
     model = PPO(
@@ -312,6 +312,7 @@ def main():
             beta_holder=beta_holder,
             cost_limit=args.cost_limit,
             lr=args.lagrangian_lr,
+            max_beta=args.max_beta,
         ),
         StatsSyncEvalCallback(
             train_env=train_env,
