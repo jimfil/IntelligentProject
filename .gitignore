@@ -26,3 +26,4 @@ logs/
 *.fdb_latexmk
 *.blg
 *.bbl
+*.pdf
