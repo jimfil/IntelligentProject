@@ -288,7 +288,7 @@ def main():
         action_alpha=args.action_alpha,
         frame_stack=args.frame_stack,
         update_obs_stats=False,
-        beta_holder=beta_holder,  # No safety cost penalty during evaluation!
+        beta_holder=beta_holder,  
     )
 
     model = PPO(
