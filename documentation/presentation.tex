@@ -50,7 +50,7 @@
 \end{frame}
 
 % Slide 2: Goal & Environment
-\begin{frame}{2. Στόχος \& Περιβάλλον Προσομοίωσης}
+\begin{frame}{2. Περιβάλλον Προσομοίωσης}
     \begin{block}{Ορισμός του Προβλήματος}
         Σχεδιασμός ενός navigation controller για ένα αυτόνομο όχημα \textbf{Racecar} στο περιβάλλον \texttt{SafetyRacecarButton2-v0} της \textbf{Safety Gymnasium}.
     \end{block}
@@ -62,34 +62,23 @@
     \end{figure}
 \end{frame}
 
-% Slide 3: Wrapper Pipeline Diagram
-\begin{frame}{3. Αρχιτεκτονική του Pipeline}
-    \begin{figure}
-        \centering
-        \includegraphics[width=0.95\linewidth]{"Pipeline.png"}
-        \caption{Διάγραμμα ροής δεδομένων και εφαρμογής των wrappers}
-    \end{figure}
-\end{frame}
-
-% Slide 4: Preprocessing and Wrappers
-\begin{frame}{4. Προεπεξεργασία και Wrappers}
-    Για τη σταθεροποίηση της εκπαίδευσης και τη βελτιστοποίηση της κίνησης του ρομπότ εφαρμόστηκαν:
+% Slide 3: Goal of the Comparison (Baselines vs Safe RL)
+\begin{frame}{3. Προσέγγιση \& Baselines Σύγκρισης}
+    \begin{block}{Στόχος της Εργασίας}
+        Η σύγκριση του μοντέλου μας με 2 baselines.
+    \end{block}
     
-    \vspace{0.2cm}
-    \begin{enumerate}
-        \item \textbf{Action Smoothing (EMA):} 
-        Αποτρέπει απότομες αλλαγές πορείας και προστατεύει από drifting: 
-        \[a_{t,\text{smooth}} = \alpha \cdot a_t + (1 - \alpha) \cdot a_{t-1,\text{smooth}}\]
+    \begin{itemize}
+        \item \textbf{Baseline 1: Scripted Controller} \\
         
-        \item \textbf{Observation Normalization (Welford)}
-        \item \textbf{Lagrangian Shaped Reward:}
-        Ανταμοιβή με βάση το τρέχον κόστος:
-        \[ r_{t,\text{shaped}} = r_t - \beta \cdot c_t \]
-    \end{enumerate}
+        \item \textbf{Baseline 2: Simple (Unconstrained) PPO} \\
+        
+        \item \textbf{Safe Navigation: Safe PPO (Lagrangian)} \\
+    \end{itemize}
 \end{frame}
 
-% Slide 5: The 3 Controllers
-\begin{frame}{5. Controllers}
+% Slide 4: The 3 Controllers
+\begin{frame}{4. Controllers}
     \begin{columns}[t]
         \begin{column}{0.32\textwidth}
             \begin{block}{Scripted Controller}
@@ -132,8 +121,34 @@
     \end{columns}
 \end{frame}
 
-% Slide 6: Conclusions & Comparison
-\begin{frame}{6. Συμπεράσματα \& Συγκριτική Ανάλυση}
+% Slide 5: Wrapper Pipeline Diagram
+\begin{frame}{5. Αρχιτεκτονική του Pipeline}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.95\linewidth]{"Pipeline.png"}
+        \caption{Διάγραμμα ροής δεδομένων και εφαρμογής των wrappers}
+    \end{figure}
+\end{frame}
+
+% Slide 6: Preprocessing and Wrappers
+\begin{frame}{6. Προεπεξεργασία και Wrappers}
+    Για τη σταθεροποίηση της εκπαίδευσης και τη βελτιστοποίηση της κίνησης του ρομπότ εφαρμόστηκαν:
+    
+    \vspace{0.2cm}
+    \begin{enumerate}
+        \item \textbf{Action Smoothing (EMA):} 
+        Αποτρέπει απότομες αλλαγές πορείας και προστατεύει από drifting: 
+        \[a_{t,\text{smooth}} = \alpha \cdot a_t + (1 - \alpha) \cdot a_{t-1,\text{smooth}}\]
+        
+        \item \textbf{Observation Normalization (Welford)}
+        \item \textbf{Lagrangian Shaped Reward:}
+        Ανταμοιβή με βάση το τρέχον κόστος:
+        \[ r_{t,\text{shaped}} = r_t - \beta \cdot c_t \]
+    \end{enumerate}
+\end{frame}
+
+% Slide 7: Conclusions & Comparison
+\begin{frame}{7. Συμπεράσματα \& Συγκριτική Ανάλυση}
     \begin{table}
         \small
         \centering
@@ -150,8 +165,8 @@
     \end{table}
 \end{frame}
 
-% Slide 7: Future Work (Behavioral Cloning & Pre-training)
-\begin{frame}{7. Μελλοντικές Βελτιώσεις}
+% Slide 8: Future Work (Behavioral Cloning & Pre-training)
+\begin{frame}{8. Μελλοντικές Βελτιώσεις}
 	\begin{block}{}
 		Συνδυασμός της \textbf{Heuristic λογικής} (Scripted Controller) με την \textbf{Ενισχυτική Μάθηση} (PPO-Lagrangian).
 	\end{block}
@@ -172,8 +187,8 @@
 	\end{itemize}
 \end{frame}
 
-% Slide 8: GitHub & Demo Video
-\begin{frame}{8. GitHub Repository \& Demo Video}
+% Slide 9: GitHub & Demo Video
+\begin{frame}{9. GitHub Repository \& Demo Video}
     \begin{block}{GitHub Repository}
         \centering
         \url{https://github.com/jimfil/IntelligentProject}
