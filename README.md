@@ -2,7 +2,7 @@
 
 **Course:** Intelligent Control 2025-2026  
 **Environment:** `SafetyRacecarButton2-v0` (Safety-Gymnasium)  
-**Robot:** Racecar — rear-wheel velocity + front-wheel steering control
+**Robot:** Racecar - rear-wheel velocity + front-wheel steering control
 
 ---
 
@@ -151,7 +151,7 @@ docker-compose run --rm shell
 ```
 SafetyRacecarButton2-v0
   obs : continuous (varies with wrappers/frame stacking)
-  act : Box(2,)  — [rear-wheel velocity, front-wheel steering angle]
+  act : Box(2,)  - [rear-wheel velocity, front-wheel steering angle]
   step returns: obs, reward, COST, terminated, truncated, info
 ```
 
