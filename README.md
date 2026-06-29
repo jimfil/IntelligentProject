@@ -35,6 +35,7 @@ You can run the project either locally using a Virtual Environment (venv) or con
 
 ### Option 1: Local Virtual Environment (Recommended for GUI Rendering)
 Use this option if you want to visualize the robot's movement in real-time (rendering the 3D physics scene).
+Recommended ~ Python 3.11
 
 #### 1. Setup the Environment
 Create the virtual environment, activate it, and install the dependencies:
