@@ -11,7 +11,7 @@
 ```
 project1_safe_nav/
 ├── documentation/
-│   ├── report.tex             # LaTeX source code of the project report
+│   ├── report.tex             # LaTeX source code of the project report and presentation
 │   └── *.jpg / *.png          # visual assets for the report
 ├── src/
 │   ├── environment_setup.py   # env factory and custom wrappers
@@ -24,8 +24,7 @@ project1_safe_nav/
 ├── docker-compose.yml         # container services definition
 ├── Dockerfile                 # base image description
 ├── requirements.txt           # Python package dependencies
-├── README.md                  # main project guide
-└── README_DOCKER.md           # detailed container configuration details
+└── README.md                  # main project guide
 ```
 
 ---
