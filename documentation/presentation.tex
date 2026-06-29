@@ -66,8 +66,17 @@
     \end{columns}
 \end{frame}
 
-% Slide 3: Preprocessing and Wrappers
-\begin{frame}{3. Προεπεξεργασία και Wrappers}
+% Slide 3: Wrapper Pipeline Diagram
+\begin{frame}{3. Αρχιτεκτονική του Pipeline}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.95\linewidth]{"Pipeline.png"}
+        \caption{Διάγραμμα ροής δεδομένων και εφαρμογής των wrappers}
+    \end{figure}
+\end{frame}
+
+% Slide 4: Preprocessing and Wrappers
+\begin{frame}{4. Προεπεξεργασία και Wrappers}
     Για τη σταθεροποίηση της εκπαίδευσης και τη βελτιστοποίηση της κίνησης του ρομπότ εφαρμόστηκαν:
     
     \vspace{0.2cm}
@@ -83,8 +92,8 @@
     \end{enumerate}
 \end{frame}
 
-% Slide 4: The 3 Controllers
-\begin{frame}{4. Controllers}
+% Slide 5: The 3 Controllers
+\begin{frame}{5. Controllers}
     \begin{columns}[t]
         \begin{column}{0.32\textwidth}
             \begin{block}{Scripted Controller}
@@ -127,9 +136,8 @@
     \end{columns}
 \end{frame}
 
-
-% Slide 8: Conclusions & Comparison
-\begin{frame}{5. Συμπεράσματα \& Συγκριτική Ανάλυση}
+% Slide 6: Conclusions & Comparison
+\begin{frame}{6. Συμπεράσματα \& Συγκριτική Ανάλυση}
     \begin{table}
         \small
         \centering
@@ -144,12 +152,10 @@
         \end{tabular}
         \caption{Συγκριτικός Πίνακας Επιδόσεων}
     \end{table}
-    
- 
 \end{frame}
 
-% Slide 6: Future Work (Behavioral Cloning & Pre-training)
-\begin{frame}{6. Μελλοντικές Βελτιώσεις}
+% Slide 7: Future Work (Behavioral Cloning & Pre-training)
+\begin{frame}{7. Μελλοντικές Βελτιώσεις}
 	\begin{block}{}
 		Συνδυασμός της \textbf{Heuristic λογικής} (Scripted Controller) με την \textbf{Ενισχυτική Μάθηση} (PPO-Lagrangian).
 	\end{block}
